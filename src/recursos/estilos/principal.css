@@ -1,0 +1,21 @@
+:root{
+    --color-principal: #007bff;
+    --color-secundario: #6c757d;
+    --color-destacado: #ffc107;
+} 
+
+header{
+    background-color: var(--color-principal);
+}
+
+nav{
+    background-color: var(--color-secundario);
+}
+
+article{
+    background-color: var(--color-destacado);
+}
+
+footer{
+    background-color: var(--color-principal);
+}
