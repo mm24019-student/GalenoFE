@@ -6,9 +6,22 @@
 </head>
 <body>
     <h1>Pruebas GalenoFE</h1>
-    <ul>
-        <li><a href="clinica_test.html">ClinicaService - unitaria</a></li>
-        <li><a href="clinica_it.html">ClinicaService - integración</a></li>
-    </ul>
+    <div id="lista"></div>
+    <script>
+        const grupos = {
+        "Persona 1 - Personas, clinicas y documentos": ["clinica", "rol", "persona", "persona_rol", "tipo_documento", "documento", "tipo_medio_contacto", "medio_contacto"],
+        "Persona 2 - Procedimientos y examenes": ["procedimiento", "procedimiento_paso", "procedimiento_paso_secuencia", "tipo_examen", "examen", "examen_tipo_examen", "procedimiento_paso_examen"],
+        "Persona 3 - Consultas": ["consulta", "consulta_procedimiento", "consulta_procedimiento_paso", "orden_examen", "examen_resultado"]
+        };
+        let html = "";
+        for (const [titulo, entidades] of Object.entries(grupos)) {
+            html += "<h2>" + titulo + "</h2><ul>";
+            for (const n of entidades) {
+                html += "<li>" + n + ": <a href='unit.html?e=" + n + "'>unitaria</a> | <a href='it.html?e=" + n + "'>integracion</a></li>";
+            }
+            html += "</ul>";
+        }
+        document.getElementById("lista").innerHTML = html;
+    </script>
 </body>
 </html>

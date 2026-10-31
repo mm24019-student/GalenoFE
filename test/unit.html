@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>pruebas unitarias</title>
+    <link rel="stylesheet" href="js/lib/mocha/mocha.css">
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="js/lib/mocha/mocha.js"></script>
+    <script type="module">
+        // ejemplo: unit.html?e=rol  ->  js/control/rol_service_test.js
+        const e = new URLSearchParams(location.search).get("e");
+        if (e && /^[a-z_]+$/.test(e)) {
+            import("./js/control/" + e + "_service_test.js");
+        } else {
+            document.getElementById("mocha").textContent = "Falta el parametro ?e=nombre_de_entidad";
+        }
+    </script>
+</body>
+</html>
