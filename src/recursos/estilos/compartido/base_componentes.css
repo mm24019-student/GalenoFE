@@ -1,0 +1,104 @@
+/* ==========================================================================
+   Estilos compartidos por los Web Components (se importan con @import)
+   El Shadow DOM aísla cada componente: ni el reset de principal.css ni los
+   estilos de otros componentes llegan hasta aquí, así que lo común se escribe
+   UNA sola vez en este archivo y cada componente lo importa en su primera línea.
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ----- Etiquetas y controles de formulario ----- */
+label {
+    display: block;
+    margin-bottom: var(--espacio-1);
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    color: var(--color-texto);
+}
+
+select, input:not([type="checkbox"]):not([type="radio"]), textarea {
+    display: block;
+    width: 100%;
+    min-height: var(--alto-control);
+    padding: var(--espacio-2) var(--espacio-3);
+    border: 1px solid var(--color-borde-control);
+    border-radius: var(--radio);
+    background: #fff;
+    color: var(--color-texto);
+    font: inherit;
+    transition: border-color var(--transicion), box-shadow var(--transicion);
+}
+
+textarea {
+    min-height: 8rem;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+input::placeholder, textarea::placeholder {
+    color: #6b7686;
+    opacity: 1;
+}
+
+select:hover, input:hover, textarea:hover {
+    border-color: var(--color-principal);
+}
+
+select:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: none;
+    border-color: var(--color-principal);
+    box-shadow: 0 0 0 4px var(--color-foco);
+}
+
+input[type="checkbox"], input[type="radio"] {
+    width: 1.15rem;
+    height: 1.15rem;
+    accent-color: var(--color-principal);
+}
+
+/* ----- Botones ----- */
+button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
+    min-height: var(--alto-control);
+    padding: var(--espacio-2) var(--espacio-4);
+    border: 1px solid transparent;
+    border-radius: var(--radio);
+    background: var(--color-principal);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background var(--transicion), box-shadow var(--transicion), transform var(--transicion);
+}
+button:hover { background: var(--color-principal-oscuro); box-shadow: var(--sombra); }
+button:active { transform: translateY(1px); }
+button:focus-visible { outline: 3px solid var(--color-destacado); outline-offset: 2px; }
+button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; transform: none; }
+
+button.secundario {
+    background: #fff;
+    border-color: var(--color-principal);
+    color: var(--color-principal);
+}
+button.secundario:hover { background: #ece9f7; }
+
+/* ----- Datos etiqueta/valor (se repiten en tarjetas y en la atención) ----- */
+.dato span {
+    display: block;
+    font-size: var(--texto-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-texto-suave);
+}
+.dato strong {
+    display: block;
+    font-size: var(--texto-base);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.vacio { color: var(--color-texto-suave); font-style: italic; }

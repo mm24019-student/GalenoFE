@@ -1,0 +1,72 @@
+@import "../compartido/base_componentes.css";
+
+:host { display: block; min-height: 100vh; }
+
+.pagina {
+    display: grid;
+    min-height: 100vh;
+    grid-template-columns: 240px minmax(0, 1fr);      /* minmax(0,…) evita que el contenido desborde */
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+        "nav encabezado"
+        "nav cuerpo"
+        "nav pie";
+}
+
+nav {
+    grid-area: nav;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--color-principal-oscuro);
+    color: #fff;
+}
+
+header {
+    grid-area: encabezado;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    padding: var(--espacio-3) var(--espacio-4);
+    background: var(--color-principal);
+    color: #fff;
+    font-size: var(--texto-xl);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    border-bottom: 3px solid var(--color-secundario);
+    box-shadow: 0 2px 8px rgba(29, 18, 71, 0.25);
+}
+::slotted([slot="logo"]) { font-size: 1.9rem; line-height: 1; }
+
+main {
+    grid-area: cuerpo;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--espacio-4);
+}
+
+footer {
+    grid-area: pie;
+    padding: var(--espacio-3) var(--espacio-4);
+    background: var(--color-principal);
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    font-size: var(--texto-sm);
+}
+
+@media (max-width: 760px) {
+    .pagina {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto 1fr auto;
+        grid-template-areas: "encabezado" "nav" "cuerpo" "pie";
+    }
+    nav { position: static; height: auto; overflow: visible; }
+    header { position: static; padding: var(--espacio-2) var(--espacio-3); font-size: var(--texto-lg); }
+    main { padding: var(--espacio-3); }
+}

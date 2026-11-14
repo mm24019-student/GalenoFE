@@ -1,0 +1,45 @@
+@import "../compartido/base_componentes.css";
+
+ul {
+    list-style: none;
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-1);
+}
+
+a, button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: var(--alto-control);
+    padding: var(--espacio-2) var(--espacio-3);
+    border: 0;
+    border-left: 4px solid transparent;
+    border-radius: var(--radio-pequeno);
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background var(--transicion);
+}
+a:hover, button:hover { background: rgba(255, 255, 255, 0.14); box-shadow: none; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--color-destacado); outline-offset: -3px; }
+a[aria-current="page"] {
+    background: rgba(0, 178, 169, 0.30);
+    border-left-color: var(--color-secundario);
+    font-weight: 700;
+}
+
+/* En pantallas angostas el menú pasa a una barra horizontal */
+@media (max-width: 760px) {
+    ul { flex-direction: row; flex-wrap: wrap; padding: var(--espacio-2); }
+    li { flex: 1 1 auto; }
+    a, button { justify-content: center; text-align: center; border-left: 0; border-bottom: 3px solid transparent; border-radius: var(--radio-pequeno); }
+    a[aria-current="page"] { border-bottom-color: var(--color-secundario); }
+}

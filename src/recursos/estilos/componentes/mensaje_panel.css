@@ -1,0 +1,29 @@
+@import "../compartido/base_componentes.css";
+
+:host { display: block; margin: var(--espacio-3) 0; }
+:host([oculto]) { display: none; }
+
+.panel {
+    display: flex;
+    gap: var(--espacio-3);
+    align-items: flex-start;
+    padding: var(--espacio-3) var(--espacio-4);
+    border: 1px solid transparent;
+    border-left-width: 5px;
+    border-radius: var(--radio);
+    background: #eaf4ff;
+    border-color: #b9d8f5;
+    border-left-color: var(--color-principal);
+    color: #0b3d6b;
+    box-shadow: var(--sombra);
+}
+.panel.error    { border-color: #f1bcc1; border-left-color: var(--color-error);        background: #fdecee; color: #7a1b24; }
+.panel.exito    { border-color: #b7e0c4; border-left-color: var(--color-exito);        background: #eaf7ee; color: #14532d; }
+.panel.info     { border-color: #d5dae0; border-left-color: var(--color-secundario);   background: #f4f6f8; color: #2b3138; }
+.panel.cargando { border-color: #f1dc9a; border-left-color: var(--color-destacado);    background: #fff8e1; color: #5c4600; }
+
+.icono { flex: none; font-size: 1.2rem; line-height: 1.4; }
+.panel.cargando .icono { animation: girar 1.4s linear infinite; display: inline-block; }
+.texto { margin: 0; line-height: 1.5; }
+
+@keyframes girar { to { transform: rotate(360deg); } }

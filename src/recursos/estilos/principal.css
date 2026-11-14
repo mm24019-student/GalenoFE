@@ -1,21 +1,100 @@
-:root{
-    --color-principal: #007bff;
-    --color-secundario: #6c757d;
+/* ==========================================================================
+   GalenoSV · estilos globales (documento principal)
+   Estos estilos viven fuera de los Shadow DOM. Lo único que los cruza son las
+   variables CSS (custom properties), por eso aquí se define el sistema de diseño
+   y cada Web Component lo consume con var(--...).
+   ========================================================================== */
+:root {
+    /* Paleta de marca */
+    --marino: #2A1B65;
+    --marino-oscuro: #1D1247;
+    --teal: #00B2A9;
+    --teal-oscuro: #00887F;
+    --gris-borde: #E1E4EC;
+    --gris-claro: #EEF1F7;
+    --texto: #1D1247;
+    --rojo: #D64550;
+    --verde: #1E8E77;
+
+    /* Roles semánticos */
+    --color-principal: var(--marino);
+    --color-principal-oscuro: var(--marino-oscuro);
+    --color-secundario: var(--teal);
     --color-destacado: #ffc107;
-} 
+    --color-fondo: var(--gris-claro);
+    --color-superficie: #ffffff;
+    --color-superficie-suave: #f7f9fc;
+    --color-texto: var(--texto);
+    --color-texto-suave: #4f5b6b;            /* 6.4:1 sobre blanco, 5.6:1 sobre el fondo */
+    --color-borde: #d7dee8;
+    --color-borde-control: #8d9bb0;          /* 3:1 mínimo para bordes de controles (WCAG 1.4.11) */
+    --color-error: var(--rojo);
+    --color-exito: var(--verde);
+    --color-foco: rgba(42, 27, 101, 0.30);
 
-header{
-    background-color: var(--color-principal);
+    /* Tipografía */
+    --fuente: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --texto-xs: 0.75rem;
+    --texto-sm: 0.875rem;
+    --texto-base: 1rem;
+    --texto-lg: 1.125rem;
+    --texto-xl: 1.375rem;
+
+    /* Espaciado (escala de 4 px) */
+    --espacio-1: 0.25rem;
+    --espacio-2: 0.5rem;
+    --espacio-3: 1rem;
+    --espacio-4: 1.5rem;
+    --espacio-5: 2rem;
+    --espacio-6: 3rem;
+
+    /* Formas y elevación */
+    --radio: 10px;
+    --radio-pequeno: 6px;
+    --sombra: 0 1px 2px rgba(42, 27, 101, 0.06), 0 4px 14px rgba(42, 27, 101, 0.07);
+    --sombra-alta: 0 2px 4px rgba(42, 27, 101, 0.08), 0 10px 28px rgba(42, 27, 101, 0.14);
+
+    /* Interacción */
+    --alto-control: 2.75rem;                 /* ≥ 44 px: objetivo táctil recomendado */
+    --transicion: 150ms ease;
+
+    color-scheme: light;
 }
 
-nav{
-    background-color: var(--color-secundario);
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-article{
-    background-color: var(--color-destacado);
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
-footer{
-    background-color: var(--color-principal);
+body {
+    margin: 0;
+    font-family: var(--fuente);
+    font-size: var(--texto-base);
+    line-height: 1.55;
+    color: var(--color-texto);
+    background: var(--color-fondo);
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+    background: var(--color-secundario);
+    color: #fff;
+}
+
+:focus-visible {
+    outline: 3px solid var(--color-destacado);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
