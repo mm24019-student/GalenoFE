@@ -1,9 +1,13 @@
 import DefaultService from './default_service.js';
 
-class ConsultaService extends DefaultService {
+class ConsultaProcedimientoService extends DefaultService {
     constructor() {
         super();
-        this.URL = this.BASE_URL + "consulta";
+        this.URL = this.BASE_URL + "consultaprocedimiento";
+    }
+
+    porConsulta(id) {
+        return this.findBy(`${this.URL}/consulta/${id}`);
     }
 }
-export default ConsultaService;
+export default ConsultaProcedimientoService;

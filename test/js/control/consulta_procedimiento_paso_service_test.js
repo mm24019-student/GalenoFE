@@ -16,7 +16,7 @@ pruebasUnitarias(ConsultaProcedimientoPasoService, {
     },
     campoActualizar: "estado",
     valorActualizado: "EN_PROCESO",
-    filtros: []
+    filtros: [{ metodo: "porConsultaProcedimiento", ruta: "consultaprocedimiento" }]
 });
 
 mocha.run();

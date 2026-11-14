@@ -14,7 +14,7 @@ pruebasUnitarias(ExamenResultadoService, {
     },
     campoActualizar: "interpretacion",
     valorActualizado: "Interpretacion actualizada",
-    filtros: []
+    filtros: [{ metodo: "porOrdenExamen", ruta: "ordenexamen" }]
 });
 
 mocha.run();

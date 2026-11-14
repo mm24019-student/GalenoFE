@@ -5,5 +5,9 @@ class ExamenResultadoService extends DefaultService {
         super();
         this.URL = this.BASE_URL + "examenresultado";
     }
+
+    porOrdenExamen(id) {
+        return this.findBy(`${this.URL}/ordenexamen/${id}`);
+    }
 }
 export default ExamenResultadoService;

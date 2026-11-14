@@ -12,7 +12,7 @@ pruebasUnitarias(OrdenExamenService, {
     },
     campoActualizar: "indicaciones",
     valorActualizado: "Indicaciones actualizadas",
-    filtros: []
+    filtros: [{ metodo: "porConsultaProcedimientoPaso", ruta: "consultaprocedimientopaso" }]
 });
 
 mocha.run();

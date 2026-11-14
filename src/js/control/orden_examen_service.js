@@ -5,5 +5,9 @@ class OrdenExamenService extends DefaultService {
         super();
         this.URL = this.BASE_URL + "ordenexamen";
     }
+
+    porConsultaProcedimientoPaso(id) {
+        return this.findBy(`${this.URL}/consultaprocedimientopaso/${id}`);
+    }
 }
 export default OrdenExamenService;

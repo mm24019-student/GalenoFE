@@ -14,7 +14,7 @@ pruebasUnitarias(ConsultaProcedimientoService, {
     },
     campoActualizar: "observaciones",
     valorActualizado: "Observacion actualizada desde el front",
-    filtros: []
+    filtros: [{ metodo: "porConsulta", ruta: "consulta" }]
 });
 
 mocha.run();
