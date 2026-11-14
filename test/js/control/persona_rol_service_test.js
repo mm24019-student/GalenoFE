@@ -13,7 +13,7 @@ pruebasUnitarias(PersonaRolService, {
     },
     campoActualizar: "fechaCreacion",
     valorActualizado: "2026-10-28T09:00:00Z",
-    filtros: []
+    filtros: [{ metodo: "porPersona", ruta: "persona" }]
 });
 
 mocha.run();

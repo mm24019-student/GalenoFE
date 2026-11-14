@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>pruebas del modelo</title>
+    <link rel="stylesheet" href="js/lib/mocha/mocha.css">
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="js/lib/mocha/mocha.js"></script>
+    <script type="module">
+        // ejemplo: model_test.html?m=rutas  ->  js/model/rutas_test.js
+        const m = new URLSearchParams(location.search).get("m");
+        if (m && /^[a-z_]+$/.test(m)) {
+            import("./js/model/" + m + "_test.js");
+        } else {
+            document.getElementById("mocha").textContent = "Falta el parametro ?m=nombre_del_modelo";
+        }
+    </script>
+</body>
+</html>

@@ -21,6 +21,12 @@
             }
             html += "</ul>";
         }
+        html += "<h2>Reglas de negocio y controles</h2><ul>";
+        html += "<li>identidad: <a href='unit.html?c=identidad'>unitaria</a></li>";
+        for (const m of ["rutas", "secuencia", "citas", "fechas", "atencion", "ids"]) {
+            html += "<li>" + m + ": <a href='model_test.html?m=" + m + "'>unitaria</a></li>";
+        }
+        html += "</ul>";
         document.getElementById("lista").innerHTML = html;
     </script>
 </body>

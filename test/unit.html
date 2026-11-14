@@ -10,11 +10,15 @@
     <script src="js/lib/mocha/mocha.js"></script>
     <script type="module">
         // ejemplo: unit.html?e=rol  ->  js/control/rol_service_test.js
-        const e = new URLSearchParams(location.search).get("e");
+        const parametros = new URLSearchParams(location.search);
+        const e = parametros.get("e");
+        const c = parametros.get("c");
         if (e && /^[a-z_]+$/.test(e)) {
             import("./js/control/" + e + "_service_test.js");
+        } else if (c && /^[a-z_]+$/.test(c)) {
+            import("./js/control/" + c + "_test.js");
         } else {
-            document.getElementById("mocha").textContent = "Falta el parametro ?e=nombre_de_entidad";
+            document.getElementById("mocha").textContent = "Falta el parametro ?e=nombre_de_entidad o ?c=nombre_de_control";
         }
     </script>
 </body>

@@ -1,9 +1,10 @@
 import DefaultError from '../entity/default_error.js';
 import DefaultResponse from '../entity/default_response.js';
+import { URL_API } from '../model/config.js';
 
 class DefaultService {
     constructor() {
-        this.BASE_URL = "http://localhost:9080/GalenoSV-1.0-SNAPSHOT/resources/";
+        this.BASE_URL = URL_API;
         this.URL = this.BASE_URL;
     }
 

@@ -5,5 +5,9 @@ class PersonaRolService extends DefaultService {
         super();
         this.URL = this.BASE_URL + "personarol";
     }
+
+    porPersona(id) {
+        return this.findBy(`${this.URL}/persona/${id}`);
+    }
 }
 export default PersonaRolService;

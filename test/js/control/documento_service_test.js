@@ -1,5 +1,7 @@
 import DocumentoService from "../../../src/js/control/documento_service.js";
 import { pruebasUnitarias } from "./pruebas_comunes.js";
+import * as chai from "../lib/chai/index.js";
+import sinon from "../lib/sinon/sinon-esm.js";
 mocha.setup("tdd");
 
 pruebasUnitarias(DocumentoService, {
