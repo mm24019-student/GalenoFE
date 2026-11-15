@@ -1,4 +1,5 @@
 import { nuevoId } from "./ids.js";
+import { ahoraISO } from "./fechas.js";
 
 export function definicionDePaso(paso) {
     return paso && paso.idProcedimientoPaso ? paso.idProcedimientoPaso : null;
@@ -37,7 +38,7 @@ export function asignacionPara(definicion, asignaciones, clinica) {
 export function nuevoPaso({ idConsultaProcedimiento, definicion, asignacion, fecha }) {
     return {
         idConsultaProcedimientoPaso: nuevoId(),
-        fechaInicio: fecha || new Date().toISOString(),
+        fechaInicio: fecha || ahoraISO(),
         fechaFin: null,
         estado: "PENDIENTE",
         valor: "",

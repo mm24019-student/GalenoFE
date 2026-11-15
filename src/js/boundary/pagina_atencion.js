@@ -10,7 +10,7 @@ import ProcedimientoPasoSecuenciaService from "../control/procedimiento_paso_sec
 import ProcedimientoPasoExamenService from "../control/procedimiento_paso_examen_service.js";
 import OrdenExamenService from "../control/orden_examen_service.js";
 import ExamenResultadoService from "../control/examen_resultado_service.js";
-import { formatearFecha, formatearSoloFecha } from "../model/fechas.js";
+import { formatearFecha, formatearSoloFecha, ahoraISO } from "../model/fechas.js";
 import { nombreClinica, nombreCompleto, nombreRol } from "../model/citas.js";
 import { ordenarPasos, pasosOrdenados, indicePasoActual, idDePasoConsulta } from "../model/secuencia.js";
 import { asignacionPara, nuevoPaso, textoIndicaciones } from "../model/atencion.js";
@@ -399,7 +399,7 @@ class PaginaAtencion extends PaginaBase {
         }
         let actualizado = Object.assign({}, paso, { valor: valor, estado: estado });
         if (estado === "COMPLETADO") {
-            actualizado.fechaFin = paso.fechaFin || new Date().toISOString();
+            actualizado.fechaFin = paso.fechaFin || ahoraISO();
         }
         this.mensaje.mostrar("cargando", "Guardando la atención…");
         new ConsultaProcedimientoPasoService().update(paso.idConsultaProcedimientoPaso, actualizado)
@@ -424,7 +424,7 @@ class PaginaAtencion extends PaginaBase {
         let idOrden = nuevoId();
         let orden = {
             idOrdenExamen: idOrden,
-            fechaCreacion: new Date().toISOString(),
+            fechaCreacion: ahoraISO(),
             indicaciones: textoIndicaciones(seleccionados.map(e => e.nombre)),
             idConsultaProcedimientoPaso: {
                 idConsultaProcedimientoPaso: paso.idConsultaProcedimientoPaso
@@ -435,7 +435,7 @@ class PaginaAtencion extends PaginaBase {
         return ordenService.create(orden).then(() => {
             return Promise.all(seleccionados.map(examen => resultadoService.create({
                 idExamenResultado: nuevoId(),
-                fechaCreacion: new Date().toISOString(),
+                fechaCreacion: ahoraISO(),
                 resultado: examen.nombre,
                 interpretacion: "Examen administrado durante la atención",
                 rutaAtestado: "pendiente",
@@ -548,7 +548,7 @@ class PaginaAtencion extends PaginaBase {
         new ConsultaProcedimientoService().create({
             idConsultaProcedimiento: nuevoId(),
             idProcedimiento: idProcedimiento,
-            fechaInicio: new Date().toISOString(),
+            fechaInicio: ahoraISO(),
             observaciones: "Procedimiento agregado durante la atención",
             idConsulta: { idConsulta: this.idConsulta }
         }).then(() => {

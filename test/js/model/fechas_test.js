@@ -1,5 +1,5 @@
 import * as chai from "../lib/chai/index.js";
-import { aISO, fechaLocalDesdeISO, sumarDiasISO, hoyISO, esHoy, formatearFecha, formatearHora, formatearSoloFecha } from "../../../src/js/model/fechas.js";
+import { aISO, ahoraISO, fechaLocalDesdeISO, sumarDiasISO, hoyISO, esHoy, formatearFecha, formatearHora, formatearSoloFecha } from "../../../src/js/model/fechas.js";
 mocha.setup("tdd");
 
 suite("model/fechas", function () {
@@ -19,6 +19,10 @@ suite("model/fechas", function () {
 
     test("hoyISO deberia tener el formato de input date", function () {
         chai.expect(hoyISO()).to.match(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    test("ahoraISO deberia tener segundos y no milisegundos", function () {
+        chai.expect(ahoraISO()).to.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
     });
 
     test("esHoy deberia comparar contra la fecha actual", function () {

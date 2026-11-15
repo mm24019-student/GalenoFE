@@ -47,6 +47,10 @@ export function hoyISO() {
     return aISO(new Date());
 }
 
+export function ahoraISO() {
+    return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
 export function sumarDiasISO(iso, dias) {
     let fecha = fechaLocalDesdeISO(iso) || new Date();
     fecha.setDate(fecha.getDate() + Number(dias || 0));
