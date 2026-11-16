@@ -78,10 +78,6 @@ class SelectorDocumento extends HTMLElement {
         return this.q("#valor").value;
     }
 
-    enfocarValor() {
-        this.q("#valor").focus();
-    }
-
     buscar() {
         if (!this.tipo) {
             this.dispatchEvent(new CustomEvent("error", {

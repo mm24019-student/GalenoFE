@@ -6,9 +6,6 @@ class PaginaNoEncontrada extends PaginaBase {
         return "Página no encontrada";
     }
 
-    get historia() {
-        return "";
-    }
 }
 customElements.define("pagina-no-encontrada", PaginaNoEncontrada);
 export default PaginaNoEncontrada;

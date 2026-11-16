@@ -15,7 +15,6 @@ const ARCHIVOS = [
     "recursos/estilos/principal.css",
     "recursos/estilos/compartido/base_componentes.css",
     "recursos/estilos/componentes/arbol_pasos.css",
-    "recursos/estilos/componentes/consulta_dashboard.css",
     "recursos/estilos/componentes/galeno_layout.css",
     "recursos/estilos/componentes/galeno_nav.css",
     "recursos/estilos/componentes/mensaje_panel.css",

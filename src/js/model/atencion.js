@@ -1,15 +1,6 @@
 import { nuevoId } from "./ids.js";
 import { ahoraISO } from "./fechas.js";
 
-export function definicionDePaso(paso) {
-    return paso && paso.idProcedimientoPaso ? paso.idProcedimientoPaso : null;
-}
-
-export function idDefinicion(paso) {
-    let definicion = definicionDePaso(paso);
-    return definicion ? definicion.idProcedimientoPaso : null;
-}
-
 export function idRolDeDefinicion(definicion) {
     return definicion && definicion.idRol ? definicion.idRol.idRol : null;
 }

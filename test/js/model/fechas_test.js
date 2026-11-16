@@ -9,12 +9,19 @@ suite("model/fechas", function () {
 
     test("fechaLocalDesdeISO deberia devolver null para textos invalidos", function () {
         chai.expect(fechaLocalDesdeISO("")).to.equal(null);
+        chai.expect(fechaLocalDesdeISO(null)).to.equal(null);
         chai.expect(fechaLocalDesdeISO("2026-13")).to.equal(null);
+        chai.expect(fechaLocalDesdeISO("abc")).to.equal(null);
+        chai.expect(fechaLocalDesdeISO("2026-01-aa")).to.equal(null);
+        chai.expect(fechaLocalDesdeISO("2026-01-15")).to.be.an.instanceOf(Date);
     });
 
     test("sumarDiasISO deberia cruzar meses y anos", function () {
         chai.expect(sumarDiasISO("2026-01-31", 1)).to.equal("2026-02-01");
         chai.expect(sumarDiasISO("2026-12-31", 1)).to.equal("2027-01-01");
+        chai.expect(sumarDiasISO("2026-03-01", -1)).to.equal("2026-02-28");
+        chai.expect(sumarDiasISO("", 0)).to.match(/^\d{4}-\d{2}-\d{2}$/);
+        chai.expect(sumarDiasISO(null, "2")).to.match(/^\d{4}-\d{2}-\d{2}$/);
     });
 
     test("hoyISO deberia tener el formato de input date", function () {
@@ -29,12 +36,16 @@ suite("model/fechas", function () {
         chai.expect(esHoy(new Date().toISOString())).to.equal(true);
         chai.expect(esHoy("2000-01-01T00:00:00Z")).to.equal(false);
         chai.expect(esHoy(null)).to.equal(false);
+        chai.expect(esHoy("invalida")).to.equal(false);
     });
 
     test("los formateadores deberian tolerar valores vacios o invalidos", function () {
         chai.expect(formatearFecha(null)).to.equal("—");
+        chai.expect(formatearFecha(undefined)).to.equal("—");
         chai.expect(formatearHora("no-es-fecha")).to.equal("—");
         chai.expect(formatearSoloFecha("")).to.equal("—");
+        chai.expect(formatearFecha("basura")).to.equal("basura");
+        chai.expect(formatearFecha("2026-01-05T10:30:00Z")).to.be.a("string").and.not.equal("—");
     });
 });
 

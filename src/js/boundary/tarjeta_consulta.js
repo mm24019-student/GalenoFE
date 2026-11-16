@@ -54,10 +54,6 @@ class TarjetaConsulta extends HTMLElement {
         this.pintar();
     }
 
-    get consulta() {
-        return this._consulta;
-    }
-
     set detalle(valor) {
         this._detalle = valor;
         this.pintar();

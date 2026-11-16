@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>pruebas boundary</title>
+    <link rel="stylesheet" href="js/lib/mocha/mocha.css">
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="js/lib/mocha/mocha.js"></script>
+    <script type="module">
+        // ejemplo: boundary_test.html?c=mensaje_panel -> js/boundary/mensaje_panel_test.js
+        const c = new URLSearchParams(location.search).get("c");
+        if (c && /^[a-z_]+$/.test(c)) {
+            import("./js/boundary/" + c + "_test.js");
+        } else {
+            document.getElementById("mocha").textContent = "Falta el parametro ?c=nombre_del_componente";
+        }
+    </script>
+</body>
+</html>

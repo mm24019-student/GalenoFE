@@ -49,10 +49,6 @@ class TarjetaCita extends HTMLElement {
         this.pintar();
     }
 
-    get cita() {
-        return this._cita;
-    }
-
     set procedimientos(valor) {
         this._procedimientos = valor || [];
         this.pintar();

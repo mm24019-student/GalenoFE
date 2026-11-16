@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>pruebas comportamiento HU</title>
+    <link rel="stylesheet" href="js/lib/mocha/mocha.css">
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="js/lib/mocha/mocha.js"></script>
+    <script type="module">
+        // ejemplo: hu_test.html?hu=hu1  ->  js/boundary/pagina_busqueda_citas_test.js
+        const mapa = {
+            selector: "./js/boundary/selector_documento_test.js",
+            hu1: "./js/boundary/pagina_busqueda_citas_test.js",
+            hu2: "./js/boundary/pagina_login_test.js",
+            hu3: "./js/boundary/pagina_dashboard_test.js",
+            hu4: "./js/boundary/pagina_atencion_test.js",
+            router: "./js/boundary/galeno_router_test.js",
+            nav: "./js/boundary/galeno_nav_test.js"
+        };
+        const hu = new URLSearchParams(location.search).get("hu");
+        if (hu && mapa[hu]) {
+            import(mapa[hu]);
+        } else {
+            document.getElementById("mocha").innerHTML = "Falta ?hu= (" + Object.keys(mapa).join(", ") + ")";
+        }
+    </script>
+</body>
+</html>
