@@ -1,5 +1,17 @@
 @import "../compartido/base_componentes.css";
 
+.marca {
+    display: flex;
+    justify-content: center;
+    padding: var(--espacio-3) var(--espacio-2) 0;
+}
+.marca img {
+    display: block;
+    width: 180px;
+    height: auto;
+}
+.marca + ul { padding-top: var(--espacio-2); }
+
 ul {
     list-style: none;
     margin: 0;
@@ -38,6 +50,8 @@ a[aria-current="page"] {
 
 /* En pantallas angostas el menú pasa a una barra horizontal */
 @media (max-width: 760px) {
+    .marca { justify-content: flex-start; padding: var(--espacio-2); }
+    .marca img { width: 100px; }
     ul { flex-direction: row; flex-wrap: wrap; padding: var(--espacio-2); }
     li { flex: 1 1 auto; }
     a, button { justify-content: center; text-align: center; border-left: 0; border-bottom: 3px solid transparent; border-radius: var(--radio-pequeno); }

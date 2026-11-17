@@ -3,23 +3,35 @@
   "tasks": [
     {
       "label": "lanzarBrowserSync",
-      "command": "browser-sync start --server src -f \"**/*\" ./src/ --no-open",
+      "command": "browser-sync start --server src --files \"src/**/*\" --no-open",
       "type": "shell",
-      "presentation": {
-        "reveal": "silent"
-      },
+      "presentation": { "reveal": "silent" },
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": {
+        "owner": "browsersync",
+        "pattern": { "regexp": "^__nunca__$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Serving files from",
+          "endsPattern": "Watching files"
+        }
+      }
     },
     {
       "label": "debugBrowserSync",
-      "command": "browser-sync start --server ./ -f \"**/*\" ./ --no-open",
+      "command": "browser-sync start --server ./ --files \"src/**/*\" \"test/**/*\" --no-open",
       "type": "shell",
-      "presentation": {
-        "reveal": "silent"
-      },
+      "presentation": { "reveal": "silent" },
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": {
+        "owner": "browsersync",
+        "pattern": { "regexp": "^__nunca__$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Serving files from",
+          "endsPattern": "Watching files"
+        }
+      }
     },
     {
       "label": "matarBrowserSync",

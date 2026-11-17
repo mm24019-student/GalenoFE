@@ -6,7 +6,7 @@ mocha.setup("tdd");
 
 function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }
 
-suite("boundary/selector-documento (HU1/HU2)", function () {
+suite("boundary/selector-documento", function () {
     let stubFind;
 
     setup(function () {

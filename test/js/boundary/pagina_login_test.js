@@ -9,7 +9,7 @@ mocha.setup("tdd");
 
 function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }
 
-suite("boundary/pagina-login (HU2)", function () {
+suite("boundary/pagina-login", function () {
     let stubs = [];
     let hashOriginal;
 

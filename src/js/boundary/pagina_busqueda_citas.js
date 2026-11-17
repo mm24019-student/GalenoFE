@@ -11,7 +11,7 @@ import { clinicasDePaciente, nombreCompleto } from "../model/citas.js";
 import { hoyISO, sumarDiasISO } from "../model/fechas.js";
 
 /**
- * HU1: busqueda publica de citas. Identifica a la persona por documento,
+ * Busqueda publica de citas. Identifica a la persona por documento,
  * limita las clinicas a aquellas donde es paciente y muestra las citas como
  * cards con su comprobante PDF generado por el backend.
  */
@@ -19,10 +19,6 @@ class PaginaBusquedaCitas extends PaginaBase {
 
     get titulo() {
         return "Búsqueda de citas";
-    }
-
-    get historia() {
-        return "HU1";
     }
 
     constructor() {

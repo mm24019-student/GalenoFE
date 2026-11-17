@@ -6,7 +6,7 @@ suite("boundary/pagina_base", function () {
     let tag = "test-pagina-base-" + Math.random().toString(36).slice(2);
     class TestPagina extends PaginaBase {
         get titulo() { return "Titulo"; }
-        get historia() { return "HUx"; }
+        get historia() { return "Etiqueta"; }
         contenido() { let p = document.createElement("p"); p.id = "c"; p.textContent = "ok"; return p; }
         conectado() { this.conectadoOk = true; }
     }
@@ -20,7 +20,7 @@ suite("boundary/pagina_base", function () {
         let el = document.createElement(tag);
         document.body.appendChild(el);
         chai.expect(el.root.querySelector("h1").textContent).to.equal("Titulo");
-        chai.expect(el.root.querySelector(".historia").textContent).to.equal("HUx");
+        chai.expect(el.root.querySelector(".historia").textContent).to.equal("Etiqueta");
         chai.expect(el.root.querySelector("#c").textContent).to.equal("ok");
         chai.expect(el.conectadoOk).to.equal(true);
     });

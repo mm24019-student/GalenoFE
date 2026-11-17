@@ -14,7 +14,7 @@ import { ordenarPasos } from "../model/secuencia.js";
 import { construirHash } from "../model/rutas.js";
 
 /**
- * HU3: dashboard del empleado. Permite elegir la clínica y el rol, consultar
+ * Dashboard del empleado. Permite elegir la clínica y el rol, consultar
  * las citas por rango de fechas y ver, para cada consulta, los datos del
  * paciente, sus procedimientos y los pasos jerárquicos ya realizados.
  */
@@ -22,10 +22,6 @@ class PaginaDashboard extends PaginaBase {
 
     get titulo() {
         return "Dashboard del empleado";
-    }
-
-    get historia() {
-        return "HU3";
     }
 
     constructor() {

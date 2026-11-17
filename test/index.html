@@ -35,18 +35,18 @@
             html += "<li>" + c + ": <a href='boundary_test.html?c=" + c + "'>unitaria</a></li>";
         }
         html += "</ul>";
-        html += "<h2>Comportamiento / HU (con stubs y casos de fallo)</h2><ul>";
-        const hus = [
-            ["selector (HU1/HU2)", "selector"],
-            ["HU1 - busqueda de citas", "hu1"],
-            ["HU2 - login", "hu2"],
-            ["HU3 - dashboard", "hu3"],
-            ["HU4 - atencion", "hu4"],
+        html += "<h2>Comportamiento (con stubs y casos de fallo)</h2><ul>";
+        const pruebas = [
+            ["selector de documento", "selector"],
+            ["busqueda de citas", "hu1"],
+            ["login", "hu2"],
+            ["dashboard", "hu3"],
+            ["atencion", "hu4"],
             ["router/navegacion", "router"],
             ["nav/menu", "nav"]
         ];
-        for (const [label, hu] of hus) {
-            html += "<li>" + label + ": <a href='hu_test.html?hu=" + hu + "'>unitaria</a></li>";
+        for (const [label, clave] of pruebas) {
+            html += "<li>" + label + ": <a href='hu_test.html?hu=" + clave + "'>unitaria</a></li>";
         }
         html += "</ul>";
         document.getElementById("lista").innerHTML = html;

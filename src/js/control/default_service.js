@@ -78,7 +78,7 @@ class DefaultService {
     }
 
     detalleSinConexion(accion) {
-        return `${accion}: no se pudo conectar con el servidor. Verifique que el backend (Open Liberty) esté encendido en ${this.BASE_URL}`;
+        return `${accion}: no se pudo conectar con el servidor.`;
     }
 
     detalleRespuestaInvalida(accion) {

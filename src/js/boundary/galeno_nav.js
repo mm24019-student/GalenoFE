@@ -7,7 +7,7 @@ import { sesion as sesionGlobal } from "../control/sesion.js";
 export function opcionesDeMenu(sesionActiva) {
     let opciones = [{ texto: "Búsqueda de citas", ruta: "#/busqueda" }];
     if (sesionActiva) {
-        opciones.push({ texto: "Dashboard", ruta: "#/dashboard" });
+        opciones.push({ texto: "Gestiones", ruta: "#/dashboard" });
         opciones.push({ texto: "Cerrar sesión", accion: "cerrar" });
     } else {
         opciones.push({ texto: "Iniciar sesión", ruta: "#/login" });
@@ -43,6 +43,12 @@ class GalenoNav extends HTMLElement {
         let estilo = document.createElement("link");
         estilo.rel = "stylesheet";
         estilo.href = "recursos/estilos/componentes/galeno_nav.css";
+        let marca = document.createElement("div");
+        marca.className = "marca";
+        let logo = document.createElement("img");
+        logo.src = "recursos/iconos/logoGaleno2609.png";
+        logo.alt = "GalenoSV";
+        marca.appendChild(logo);
         let lista = document.createElement("ul");
         opcionesDeMenu(this.sesion.activa).forEach(o => {
             let item = document.createElement("li");
@@ -67,6 +73,7 @@ class GalenoNav extends HTMLElement {
         });
         let nav = document.createElement("nav");
         nav.setAttribute("aria-label", "Menú principal");
+        nav.appendChild(marca);
         nav.appendChild(lista);
         this.root.replaceChildren(estilo, nav);
     }

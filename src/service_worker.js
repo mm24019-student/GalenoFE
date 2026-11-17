@@ -2,10 +2,11 @@
 // - Al instalarse guarda TODA la app (precache), asi abre sin servidor.
 // - Archivos de la app: primero la red, y si falla lo guardado.
 // - GET de la API REST: primero la red, y si el backend esta apagado, lo ultimo consultado.
-import { URL_API } from "./js/model/config.js";
+import { URL_API, MENSAJE_ESTADO_BACKEND } from "./js/model/config.js";
 
-const CACHE = "galeno-fe-v10";
+const CACHE = "galeno-fe-v11";
 const CACHE_API = "galeno-api-v1";
+
 
 // Rutas relativas a este archivo (src/)
 const ARCHIVOS = [
@@ -16,6 +17,7 @@ const ARCHIVOS = [
     "recursos/estilos/compartido/base_componentes.css",
     "recursos/estilos/componentes/arbol_pasos.css",
     "recursos/estilos/componentes/aviso_instalar_app.css",
+    "recursos/estilos/componentes/aviso_sin_conexion.css",
     "recursos/estilos/componentes/galeno_layout.css",
     "recursos/estilos/componentes/galeno_nav.css",
     "recursos/estilos/componentes/mensaje_panel.css",
@@ -31,10 +33,12 @@ const ARCHIVOS = [
     "recursos/iconos/icono-512.png",
     "recursos/iconos/icono-192-maskable.png",
     "recursos/iconos/icono-512-maskable.png",
+    "recursos/iconos/logoGaleno2609.png",
     "recursos/capturas/escritorio.png",
     "recursos/capturas/movil.png",
     "js/boundary/arbol_pasos.js",
     "js/boundary/aviso_instalar_app.js",
+    "js/boundary/aviso_sin_conexion.js",
     "js/boundary/galeno_app.js",
     "js/boundary/galeno_layout.js",
     "js/boundary/galeno_nav.js",
@@ -100,17 +104,38 @@ self.addEventListener("activate", evento => {
     );
 });
 
+// Avisa a la pestaña si la API respondió por red o si se sirvió desde caché.
+function avisarEstado(idCliente, conectado) {
+    if (!idCliente || !self.clients) {
+        return;
+    }
+    self.clients.get(idCliente).then(cliente => {
+        if (cliente) {
+            cliente.postMessage({ tipo: MENSAJE_ESTADO_BACKEND, conectado: conectado });
+        }
+    }).catch(() => {});
+}
+
 // Intenta la red; si funciona guarda una copia, si falla devuelve la copia guardada.
-function redPrimero(peticion, nombreCache, alFallar) {
+function redPrimero(peticion, nombreCache, alFallar, idCliente) {
+    const esApi = peticion.url.startsWith(URL_API);
     return fetch(peticion).then(respuesta => {
         if (respuesta.ok) {
             const copia = respuesta.clone();
             caches.open(nombreCache).then(cache => cache.put(peticion, copia));
         }
+        if (esApi) {
+            avisarEstado(idCliente, true);
+        }
         return respuesta;
     }).catch(() => caches.open(nombreCache)
         .then(cache => cache.match(peticion))
-        .then(guardada => guardada || alFallar()));
+        .then(guardada => {
+            if (esApi) {
+                avisarEstado(idCliente, false);
+            }
+            return guardada || alFallar();
+        }));
 }
 
 self.addEventListener("fetch", evento => {
@@ -124,7 +149,7 @@ self.addEventListener("fetch", evento => {
 
     // API REST
     if (peticion.url.startsWith(URL_API)) {
-        evento.respondWith(redPrimero(peticion, CACHE_API, () => Response.error()));
+        evento.respondWith(redPrimero(peticion, CACHE_API, () => Response.error(), evento.clientId));
         return;
     }
 
@@ -139,6 +164,6 @@ self.addEventListener("fetch", evento => {
             // Un script o css que falta debe fallar de verdad (devolver HTML rompe los modulos).
             peticion.mode === "navigate"
                 ? caches.match("index.html").then(inicio => inicio || Response.error())
-                : Response.error())
+                : Response.error(), evento.clientId)
     );
 });

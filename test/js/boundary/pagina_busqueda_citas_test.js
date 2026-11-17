@@ -11,7 +11,7 @@ mocha.setup("tdd");
 
 function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }
 
-suite("boundary/pagina-busqueda-citas (HU1)", function () {
+suite("boundary/pagina-busqueda-citas", function () {
     let stubs = [];
 
     setup(function () {

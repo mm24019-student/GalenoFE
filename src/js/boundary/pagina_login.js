@@ -6,7 +6,7 @@ import { sesion } from "../control/sesion.js";
 import { asignacionesEmpleado, nombreClinica, nombreCompleto, nombreRol } from "../model/citas.js";
 
 /**
- * HU2: identificación del empleado con tipo y número de documento. Al validar
+ * Identificación del empleado con tipo y número de documento. Al validar
  * la identidad se listan sus clínicas y roles de empleado; al entrar, la
  * sesión queda disponible para el dashboard y la atención.
  */
@@ -14,10 +14,6 @@ class PaginaLogin extends PaginaBase {
 
     get titulo() {
         return "Iniciar sesión";
-    }
-
-    get historia() {
-        return "HU2";
     }
 
     constructor() {

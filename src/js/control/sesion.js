@@ -1,7 +1,7 @@
 const CLAVE = "galeno-sesion";
 
 /**
- * Sesion del empleado (HU2). Es reactiva: emite el evento "cambio" cada vez que se modifica,
+ * Sesion del empleado. Es reactiva: emite el evento "cambio" cada vez que se modifica,
  * y asi el menu y el router reaccionan sin que nadie los llame.
  * Guarda los datos en sessionStorage para sobrevivir a una recarga de la pagina.
  */

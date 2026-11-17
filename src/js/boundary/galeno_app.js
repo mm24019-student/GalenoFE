@@ -1,4 +1,5 @@
 // Punto de entrada: al importar cada archivo se registra su componente (customElements.define)
+import "./aviso_sin_conexion.js";
 import "./pagina_busqueda_citas.js";
 import "./pagina_login.js";
 import "./pagina_dashboard.js";

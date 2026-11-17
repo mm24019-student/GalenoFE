@@ -14,7 +14,7 @@ function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }
 
 const asigEmpleado = { rol: { idRol: "r1", nombre: "Doctor" }, clinica: { idClinica: "c1", nombre: "Central" }, idPersonaRol: "pr1" };
 
-suite("boundary/pagina-dashboard (HU3)", function () {
+suite("boundary/pagina-dashboard", function () {
     let stubs = [];
 
     setup(function () {

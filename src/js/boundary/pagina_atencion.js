@@ -17,7 +17,7 @@ import { asignacionPara, nuevoPaso, textoIndicaciones } from "../model/atencion.
 import { nuevoId } from "../model/ids.js";
 
 /**
- * HU4: atención de una consulta. Permite registrar el seguimiento de un paso,
+ * Atención de una consulta. Permite registrar el seguimiento de un paso,
  * asignar exámenes de la lista permitida y avanzar o retroceder en la
  * secuencia del procedimiento.
  */
@@ -25,10 +25,6 @@ class PaginaAtencion extends PaginaBase {
 
     get titulo() {
         return "Atención de consulta";
-    }
-
-    get historia() {
-        return "HU4";
     }
 
     constructor() {

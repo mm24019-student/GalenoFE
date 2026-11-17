@@ -24,7 +24,7 @@ const consulta = {
 const defA = { idProcedimientoPaso: "a", nombre: "Paso A", idRol: { idRol: "r1" } };
 const defB = { idProcedimientoPaso: "b", nombre: "Paso B", idRol: { idRol: "r1" } };
 
-suite("boundary/pagina-atencion (HU4)", function () {
+suite("boundary/pagina-atencion", function () {
     let stubs = [];
     let hashOriginal;
 
