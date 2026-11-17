@@ -2,6 +2,7 @@ import PaginaBase from "./pagina_base.js";
 import "./selector_documento.js";
 import "./mensaje_panel.js";
 import "./tarjeta_cita.js";
+import "./aviso_instalar_app.js";
 import ConsultaService from "../control/consulta_service.js";
 import ConsultaProcedimientoService from "../control/consulta_procedimiento_service.js";
 import ProcedimientoService from "../control/procedimiento_service.js";
@@ -69,6 +70,7 @@ class PaginaBusquedaCitas extends PaginaBase {
                 </div>
                 <div class="cuadricula" id="cuadricula"></div>
             </section>
+            <aviso-instalar-app id="avisoInstalar"></aviso-instalar-app>
         `;
         return contenedor;
     }
@@ -78,6 +80,7 @@ class PaginaBusquedaCitas extends PaginaBase {
         this.selector = this.root.querySelector("#selector");
         this.filtros = this.root.querySelector("#filtros");
         this.resultados = this.root.querySelector("#resultados");
+        this.avisoInstalar = this.root.querySelector("#avisoInstalar");
         this.desde = this.root.querySelector("#desde");
         this.hasta = this.root.querySelector("#hasta");
         this.desde.value = sumarDiasISO(hoyISO(), -30);
@@ -209,6 +212,9 @@ class PaginaBusquedaCitas extends PaginaBase {
     descargarTicket(cita) {
         if (!cita || !cita.idConsulta) {
             return;
+        }
+        if (this.avisoInstalar) {
+            this.avisoInstalar.mostrar();
         }
         this.mensaje.mostrar("cargando", "Generando el comprobante en el servidor…");
         new ConsultaService().descargarTicket(cita.idConsulta).then(blob => {

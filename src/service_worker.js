@@ -4,7 +4,7 @@
 // - GET de la API REST: primero la red, y si el backend esta apagado, lo ultimo consultado.
 import { URL_API } from "./js/model/config.js";
 
-const CACHE = "galeno-fe-v7";
+const CACHE = "galeno-fe-v8";
 const CACHE_API = "galeno-api-v1";
 
 // Rutas relativas a este archivo (src/)
@@ -15,6 +15,7 @@ const ARCHIVOS = [
     "recursos/estilos/principal.css",
     "recursos/estilos/compartido/base_componentes.css",
     "recursos/estilos/componentes/arbol_pasos.css",
+    "recursos/estilos/componentes/aviso_instalar_app.css",
     "recursos/estilos/componentes/galeno_layout.css",
     "recursos/estilos/componentes/galeno_nav.css",
     "recursos/estilos/componentes/mensaje_panel.css",
@@ -31,11 +32,11 @@ const ARCHIVOS = [
     "recursos/iconos/icono-192-maskable.png",
     "recursos/iconos/icono-512-maskable.png",
     "js/boundary/arbol_pasos.js",
+    "js/boundary/aviso_instalar_app.js",
     "js/boundary/galeno_app.js",
     "js/boundary/galeno_layout.js",
     "js/boundary/galeno_nav.js",
     "js/boundary/galeno_router.js",
-    "js/boundary/instalar_app.js",
     "js/boundary/mensaje_panel.js",
     "js/boundary/pagina_atencion.js",
     "js/boundary/pagina_base.js",

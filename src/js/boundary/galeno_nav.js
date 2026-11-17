@@ -1,5 +1,4 @@
 import { sesion as sesionGlobal } from "../control/sesion.js";
-import "./instalar_app.js";
 
 /**
  * Opciones del menu segun haya o no una sesion iniciada.
@@ -69,8 +68,7 @@ class GalenoNav extends HTMLElement {
         let nav = document.createElement("nav");
         nav.setAttribute("aria-label", "Menú principal");
         nav.appendChild(lista);
-        let instalar = document.createElement("instalar-app");
-        this.root.replaceChildren(estilo, nav, instalar);
+        this.root.replaceChildren(estilo, nav);
     }
 }
 customElements.define("galeno-nav", GalenoNav);
