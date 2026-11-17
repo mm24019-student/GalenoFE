@@ -4,7 +4,7 @@
 // - GET de la API REST: primero la red, y si el backend esta apagado, lo ultimo consultado.
 import { URL_API } from "./js/model/config.js";
 
-const CACHE = "galeno-fe-v8";
+const CACHE = "galeno-fe-v9";
 const CACHE_API = "galeno-api-v1";
 
 // Rutas relativas a este archivo (src/)

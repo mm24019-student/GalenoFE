@@ -4,7 +4,7 @@ plantilla.innerHTML = `
     <aside class="aviso-instalar" part="aviso-instalar" role="status" aria-live="polite" hidden>
         <p class="aviso-instalar__titulo">Instalar aplicación</p>
         <p class="aviso-instalar__texto">¿Quieres estar al pendiente de tus citas? Descarga la app</p>
-        <p class="aviso-instalar__nota" hidden>La instalación no está disponible en este momento. Usa la opción “Instalar app” del navegador si aparece.</p>
+        <p class="aviso-instalar__nota" hidden>La instalación no está disponible en este momento. Recarga la página o usa la opción “Instalar app” del navegador.</p>
         <div class="aviso-instalar__acciones">
             <button type="button" class="aviso-instalar__instalar">Instalar</button>
             <button type="button" class="aviso-instalar__cerrar secundario" aria-label="Cerrar aviso">Cancelar</button>
@@ -13,19 +13,56 @@ plantilla.innerHTML = `
 `;
 
 const CLAVE_INSTALADA = "galeno-app-instalada";
-let instalacionPendienteGlobal = null;
+const EVENTO_CAMBIO = "galeno-instalacion-cambiada";
 
-window.addEventListener("beforeinstallprompt", (evento) => {
-    evento.preventDefault();
-    instalacionPendienteGlobal = evento;
-});
+let promptDiferido = null;
+let promptDisponible = false;
+let canceladoEnEstaPagina = false;
 
-window.addEventListener("appinstalled", () => {
-    instalacionPendienteGlobal = null;
+function leerMarca() {
+    try {
+        return localStorage.getItem(CLAVE_INSTALADA) === "1";
+    } catch (e) {
+        return false;
+    }
+}
+
+function marcarInstalada() {
     try {
         localStorage.setItem(CLAVE_INSTALADA, "1");
     } catch (e) {
     }
+}
+
+function limpiarMarca() {
+    try {
+        localStorage.removeItem(CLAVE_INSTALADA);
+    } catch (e) {
+    }
+}
+
+function enModoApp() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+        || window.navigator.standalone === true;
+}
+
+function estaInstalada() {
+    return enModoApp() || (leerMarca() && !promptDisponible);
+}
+
+window.addEventListener("beforeinstallprompt", (evento) => {
+    evento.preventDefault();
+    promptDiferido = evento;
+    promptDisponible = true;
+    limpiarMarca();
+    window.dispatchEvent(new CustomEvent(EVENTO_CAMBIO));
+});
+
+window.addEventListener("appinstalled", () => {
+    promptDiferido = null;
+    promptDisponible = false;
+    marcarInstalada();
+    window.dispatchEvent(new CustomEvent(EVENTO_CAMBIO));
 });
 
 class AvisoInstalarApp extends HTMLElement {
@@ -34,67 +71,54 @@ class AvisoInstalarApp extends HTMLElement {
         super();
         this.root = this.attachShadow({ mode: "open" });
         this.root.appendChild(plantilla.content.cloneNode(true));
-        this.alInstalar = () => this.actualizarEstado();
-        this.alInstalada = () => {
-            this.marcarInstalada();
-            this.ocultar();
-        };
-    }
-
-    instalada() {
-        return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
-            || window.navigator.standalone === true
-            || localStorage.getItem(CLAVE_INSTALADA) === "1";
-    }
-
-    marcarInstalada() {
-        try {
-            localStorage.setItem(CLAVE_INSTALADA, "1");
-        } catch (e) {
-        }
-    }
-
-    connectedCallback() {
         this.aviso = this.root.querySelector(".aviso-instalar");
         this.botonInstalar = this.root.querySelector(".aviso-instalar__instalar");
         this.nota = this.root.querySelector(".aviso-instalar__nota");
-        if (this.instalada()) {
+        this.alCambio = () => this.actualizarEstado();
+        this.root.querySelector(".aviso-instalar__cerrar").addEventListener("click", () => {
+            canceladoEnEstaPagina = true;
             this.ocultar();
-            return;
-        }
-        this.root.querySelector(".aviso-instalar__cerrar").addEventListener("click", () => this.ocultar());
+        });
         this.botonInstalar.addEventListener("click", async () => {
-            if (!instalacionPendienteGlobal) {
+            if (!promptDiferido) {
                 this.actualizarEstado();
                 return;
             }
-            const pendiente = instalacionPendienteGlobal;
-            instalacionPendienteGlobal = null;
+            const pendiente = promptDiferido;
+            promptDiferido = null;
+            promptDisponible = false;
             pendiente.prompt();
             const eleccion = await pendiente.userChoice;
             if (eleccion && eleccion.outcome === "accepted") {
-                this.marcarInstalada();
+                marcarInstalada();
             }
+            this.actualizarEstado();
             this.ocultar();
         });
-        window.addEventListener("beforeinstallprompt", this.alInstalar);
-        window.addEventListener("appinstalled", this.alInstalada);
+    }
+
+    connectedCallback() {
+        window.addEventListener(EVENTO_CAMBIO, this.alCambio);
         this.actualizarEstado();
+        if (estaInstalada()) {
+            this.ocultar();
+        }
     }
 
     disconnectedCallback() {
-        window.removeEventListener("beforeinstallprompt", this.alInstalar);
-        window.removeEventListener("appinstalled", this.alInstalada);
+        window.removeEventListener(EVENTO_CAMBIO, this.alCambio);
     }
 
     actualizarEstado() {
-        const disponible = !!instalacionPendienteGlobal;
+        const disponible = !!promptDiferido;
         if (this.botonInstalar) this.botonInstalar.disabled = !disponible;
         if (this.nota) this.nota.hidden = disponible;
+        if (estaInstalada()) this.ocultar();
     }
 
     mostrar() {
-        if (this.instalada()) return;
+        if (canceladoEnEstaPagina) return;
+        if (estaInstalada()) return;
         this.actualizarEstado();
         if (this.aviso) this.aviso.hidden = false;
     }
