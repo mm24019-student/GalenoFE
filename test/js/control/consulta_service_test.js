@@ -1,7 +1,7 @@
 import ConsultaService from "../../../src/js/control/consulta_service.js";
 import { pruebasUnitarias } from "./pruebas_comunes.js";
-import * as chai from "../../lib/chai/index.js";
-import sinon from "../../lib/sinon/sinon-esm.js";
+import * as chai from "../lib/chai/index.js";
+import sinon from "../lib/sinon/sinon-esm.js";
 mocha.setup("tdd");
 
 pruebasUnitarias(ConsultaService, {
@@ -51,7 +51,7 @@ suite("ConsultaService especificos", function () {
     });
 
     test("buscar con filtros null/undefined no deberia lanzar", function (done) {
-        stubFetch = sinon.stub(window, "fetch").resolves(new Response(JSON.stringify([]), { status: 200 }));
+        stubFetch = sinon.stub(window, "fetch").callsFake(() => Promise.resolve(new Response(JSON.stringify([]), { status: 200 })));
         new ConsultaService().buscar().then(() => new ConsultaService().buscar(null)).then(() => {
             chai.expect(stubFetch.callCount).to.equal(2);
             done();

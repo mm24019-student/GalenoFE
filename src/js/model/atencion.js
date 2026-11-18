@@ -13,20 +13,20 @@ export function idRolDeDefinicion(definicion) {
 export function asignacionPara(definicion, asignaciones, clinica) {
     let idClinica = clinica ? clinica.idClinica : null;
     let idRol = idRolDeDefinicion(definicion);
-    let lista = asignaciones || [];
+    let lista = (asignaciones || []).filter(a => a && (a.rol || a.clinica));
     let porClinica = lista.filter(a => !idClinica || (a.clinica && a.clinica.idClinica === idClinica));
     let exacta = porClinica.find(a => a.rol && a.rol.idRol === idRol);
     if (exacta) {
         return exacta;
     }
-    let porRol = lista.find(a => a.rol && a.rol.idRol === idRol);
+    let porRol = lista.find(a => a && a.rol && a.rol.idRol === idRol);
     if (porRol) {
         return porRol;
     }
-    return porClinica[0] || lista[0] || null;
+    return porClinica[0] || lista.find(Boolean) || null;
 }
 
-export function nuevoPaso({ idConsultaProcedimiento, definicion, asignacion, fecha }) {
+export function nuevoPaso({ idConsultaProcedimiento, definicion, asignacion, fecha } = {}) {
     return {
         idConsultaProcedimientoPaso: nuevoId(),
         fechaInicio: fecha || ahoraISO(),
@@ -34,8 +34,10 @@ export function nuevoPaso({ idConsultaProcedimiento, definicion, asignacion, fec
         estado: "PENDIENTE",
         valor: "",
         idConsultaProcedimiento: { idConsultaProcedimiento: idConsultaProcedimiento },
-        idProcedimientoPaso: { idProcedimientoPaso: definicion.idProcedimientoPaso },
-        idPersonaRol: asignacion ? { idPersonaRol: asignacion.idPersonaRol } : null
+        idProcedimientoPaso: definicion && definicion.idProcedimientoPaso
+            ? { idProcedimientoPaso: definicion.idProcedimientoPaso } : null,
+        idPersonaRol: asignacion && asignacion.idPersonaRol
+            ? { idPersonaRol: asignacion.idPersonaRol } : null
     };
 }
 

@@ -1,4 +1,4 @@
-import * as chai from "../../lib/chai/index.js";
+import * as chai from "../lib/chai/index.js";
 import { opcionesDeMenu } from "../../../src/js/boundary/galeno_nav.js";
 import "../../../src/js/boundary/galeno_nav.js";
 import { sesion } from "../../../src/js/control/sesion.js";

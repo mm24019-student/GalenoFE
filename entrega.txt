@@ -1,0 +1,9 @@
+Integrantes:
+- Oscar Jeremias Molina Martinez, MM24019
+- Alberto Antonio Rivera Orellana, RO23021
+- Jose Guillermo Ganuza Alcantara, GA20025
+
+Repositorio: https://github.com/mm24019-student/GalenoFE.git
+Commit: 838abeddf09af9f7afbfccacfa366cc6251cb7a2
+
+Nota: actualizar el ID del commit despues de hacer el commit final de las correcciones.

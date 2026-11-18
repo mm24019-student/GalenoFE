@@ -1,5 +1,5 @@
-import * as chai from "../../lib/chai/index.js";
-import sinon from "../../lib/sinon/sinon-esm.js";
+import * as chai from "../lib/chai/index.js";
+import sinon from "../lib/sinon/sinon-esm.js";
 import { sesion } from "../../../src/js/control/sesion.js";
 import ConsultaService from "../../../src/js/control/consulta_service.js";
 import ProcedimientoService from "../../../src/js/control/procedimiento_service.js";
@@ -84,6 +84,9 @@ suite("boundary/pagina-dashboard", function () {
         stubs.push(sinon.stub(ProcedimientoPasoSecuenciaService.prototype, "porProcedimiento").resolves({ datos: [] }));
         let el = crear(); await tick(20);
         el.elegirContexto(); await tick(60);
+        let filtros = ConsultaService.prototype.buscar.firstCall.args[0];
+        chai.expect(filtros.idClinica).to.equal("c1");
+        chai.expect(filtros.idRol).to.equal(undefined);
         chai.expect(el.resultados.hidden).to.equal(false);
         chai.expect(el.root.querySelectorAll("tarjeta-consulta").length).to.equal(1);
     });

@@ -2,51 +2,99 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>pruebas GalenoFE</title>
+    <link rel="stylesheet" href="js/lib/mocha/mocha.css">
 </head>
 <body>
     <h1>Pruebas GalenoFE</h1>
-    <div id="lista"></div>
-    <script>
+    <p><a href="index.html?solo=unitarias">Solo unitarias</a> | <a href="index.html">Todas (unitarias + integración)</a></p>
+    <p>Las pruebas de integración requieren el backend en ejecución y crean/modifican registros de prueba.</p>
+    <div id="mocha"></div>
+    <details>
+        <summary>Pruebas individuales</summary>
+        <div id="lista"></div>
+    </details>
+    <script src="js/lib/mocha/mocha.js"></script>
+    <script type="module">
+        const modelos = ["atencion", "citas", "fechas", "ids", "rutas", "secuencia"];
+        const controles = [
+            "clinica_service", "consulta_procedimiento_paso_service",
+            "consulta_procedimiento_service", "consulta_service", "default_service",
+            "documento_service", "examen_resultado_service", "examen_service",
+            "examen_tipo_examen_service", "identidad", "medio_contacto_service",
+            "orden_examen_service", "persona_rol_service", "persona_service",
+            "procedimiento_paso_examen_service", "procedimiento_paso_secuencia_service",
+            "procedimiento_paso_service", "procedimiento_service", "rol_service",
+            "sesion", "tipo_documento_service", "tipo_examen_service",
+            "tipo_medio_contacto_service"
+        ];
+        const componentes = [
+            "arbol_pasos", "aviso_instalar_app", "aviso_sin_conexion", "galeno_nav",
+            "galeno_router", "mensaje_panel", "pagina_atencion", "pagina_base",
+            "pagina_busqueda_citas", "pagina_dashboard", "pagina_login",
+            "selector_documento", "tarjeta_cita", "tarjeta_consulta"
+        ];
+        const integracion = [
+            "clinica", "consulta_procedimiento_paso", "consulta_procedimiento",
+            "consulta", "documento", "examen_resultado", "examen",
+            "examen_tipo_examen", "medio_contacto", "orden_examen", "persona_rol",
+            "persona", "procedimiento_paso_examen", "procedimiento_paso_secuencia",
+            "procedimiento_paso", "procedimiento", "rol", "tipo_documento",
+            "tipo_examen", "tipo_medio_contacto"
+        ];
+        const unitarias = [
+            ...modelos.map(n => "./js/model/" + n + "_test.js"),
+            ...controles.map(n => "./js/control/" + n + "_test.js"),
+            ...componentes.map(n => "./js/boundary/" + n + "_test.js")
+        ];
+        const integracionModulos = integracion.map(n => "./js/control/" + n + "_service_it.js");
+        const soloUnitarias = new URLSearchParams(location.search).get("solo") === "unitarias";
+        const modulos = soloUnitarias ? unitarias : unitarias.concat(integracionModulos);
+
+        const ejecutar = mocha.run.bind(mocha);
+        let errorCarga = null;
+        mocha.run = function () { return null; };
+        try {
+            for (const modulo of modulos) {
+                await import(modulo);
+            }
+        } catch (error) {
+            errorCarga = error;
+        } finally {
+            mocha.run = ejecutar;
+        }
+        if (errorCarga) {
+            document.getElementById("mocha").textContent = "Error cargando pruebas: " + errorCarga.message;
+            document.title = "Error cargando pruebas - GalenoFE";
+        } else {
+            mocha.run(function (fallos) {
+                document.title = (fallos === 0 ? "OK" : "FAIL") + " " + fallos + " fallos - GalenoFE";
+            });
+        }
+
         const grupos = {
-        "Persona 1 - Personas, clinicas y documentos": ["clinica", "rol", "persona", "persona_rol", "tipo_documento", "documento", "tipo_medio_contacto", "medio_contacto"],
-        "Persona 2 - Procedimientos y examenes": ["procedimiento", "procedimiento_paso", "procedimiento_paso_secuencia", "tipo_examen", "examen", "examen_tipo_examen", "procedimiento_paso_examen"],
-        "Persona 3 - Consultas": ["consulta", "consulta_procedimiento", "consulta_procedimiento_paso", "orden_examen", "examen_resultado"]
+            "Modelo": modelos.map(n => [n, "model_test.html?m=" + n]),
+            "Controles": controles.map(n => [n, "unit.html?" + (n.endsWith("_service") ? "e=" + n.replace("_service", "") : "c=" + n)]),
+            "Componentes": componentes.map(n => [n, "boundary_test.html?c=" + n]),
+            "Integración": integracion.map(n => [n, "it.html?e=" + n])
         };
+        const comportamiento = [
+            ["selector", "selector_documento"], ["hu1", "pagina_busqueda_citas"],
+            ["hu2", "pagina_login"], ["hu3", "pagina_dashboard"],
+            ["hu4", "pagina_atencion"], ["router", "galeno_router"], ["nav", "galeno_nav"]
+        ];
         let html = "";
-        for (const [titulo, entidades] of Object.entries(grupos)) {
+        for (const [titulo, entradas] of Object.entries(grupos)) {
             html += "<h2>" + titulo + "</h2><ul>";
-            for (const n of entidades) {
-                html += "<li>" + n + ": <a href='unit.html?e=" + n + "'>unitaria</a> | <a href='it.html?e=" + n + "'>integracion</a></li>";
+            for (const [nombre, destino] of entradas) {
+                html += "<li>" + nombre + ": <a href='" + destino + "'>individual</a></li>";
             }
             html += "</ul>";
         }
-        html += "<h2>Reglas de negocio y controles</h2><ul>";
-        html += "<li>identidad: <a href='unit.html?c=identidad'>unitaria</a></li>";
-        html += "<li>sesion: <a href='unit.html?c=sesion'>unitaria</a></li>";
-        html += "<li>default_service (errores): <a href='unit.html?c=default_service'>unitaria</a></li>";
-        html += "<li>consulta_service (extra): <a href='unit.html?e=consulta'>unitaria</a></li>";
-        for (const m of ["rutas", "secuencia", "citas", "fechas", "atencion", "ids"]) {
-            html += "<li>" + m + ": <a href='model_test.html?m=" + m + "'>unitaria</a></li>";
-        }
-        html += "</ul>";
-        html += "<h2>Componentes boundary (robustez/errores)</h2><ul>";
-        for (const c of ["mensaje_panel", "arbol_pasos", "tarjeta_cita", "tarjeta_consulta", "pagina_base"]) {
-            html += "<li>" + c + ": <a href='boundary_test.html?c=" + c + "'>unitaria</a></li>";
-        }
-        html += "</ul>";
-        html += "<h2>Comportamiento (con stubs y casos de fallo)</h2><ul>";
-        const pruebas = [
-            ["selector de documento", "selector"],
-            ["busqueda de citas", "hu1"],
-            ["login", "hu2"],
-            ["dashboard", "hu3"],
-            ["atencion", "hu4"],
-            ["router/navegacion", "router"],
-            ["nav/menu", "nav"]
-        ];
-        for (const [label, clave] of pruebas) {
-            html += "<li>" + label + ": <a href='hu_test.html?hu=" + clave + "'>unitaria</a></li>";
+        html += "<h2>Comportamiento</h2><ul>";
+        for (const [clave, nombre] of comportamiento) {
+            html += "<li>" + nombre + ": <a href='hu_test.html?hu=" + clave + "'>individual</a></li>";
         }
         html += "</ul>";
         document.getElementById("lista").innerHTML = html;

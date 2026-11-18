@@ -1,5 +1,5 @@
-import * as chai from "../../lib/chai/index.js";
-import sinon from "../../lib/sinon/sinon-esm.js";
+import * as chai from "../lib/chai/index.js";
+import sinon from "../lib/sinon/sinon-esm.js";
 import TipoDocumentoService from "../../../src/js/control/tipo_documento_service.js";
 import "../../../src/js/boundary/selector_documento.js";
 mocha.setup("tdd");

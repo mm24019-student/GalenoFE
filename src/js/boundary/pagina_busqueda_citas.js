@@ -2,7 +2,6 @@ import PaginaBase from "./pagina_base.js";
 import "./selector_documento.js";
 import "./mensaje_panel.js";
 import "./tarjeta_cita.js";
-import "./aviso_instalar_app.js";
 import ConsultaService from "../control/consulta_service.js";
 import ConsultaProcedimientoService from "../control/consulta_procedimiento_service.js";
 import ProcedimientoService from "../control/procedimiento_service.js";
@@ -39,6 +38,7 @@ class PaginaBusquedaCitas extends PaginaBase {
             </section>
             <selector-documento id="selector"></selector-documento>
             <mensaje-panel id="mensaje" oculto></mensaje-panel>
+            <div id="vistaPrevia"></div>
             <section id="filtros" hidden>
                 <div class="rejilla">
                     <div>
@@ -66,7 +66,6 @@ class PaginaBusquedaCitas extends PaginaBase {
                 </div>
                 <div class="cuadricula" id="cuadricula"></div>
             </section>
-            <aviso-instalar-app id="avisoInstalar"></aviso-instalar-app>
         `;
         return contenedor;
     }
@@ -76,7 +75,6 @@ class PaginaBusquedaCitas extends PaginaBase {
         this.selector = this.root.querySelector("#selector");
         this.filtros = this.root.querySelector("#filtros");
         this.resultados = this.root.querySelector("#resultados");
-        this.avisoInstalar = this.root.querySelector("#avisoInstalar");
         this.desde = this.root.querySelector("#desde");
         this.hasta = this.root.querySelector("#hasta");
         this.desde.value = sumarDiasISO(hoyISO(), -30);
@@ -88,6 +86,12 @@ class PaginaBusquedaCitas extends PaginaBase {
         this.root.querySelector("#cuadricula").addEventListener("descargar-ticket", evento => {
             this.descargarTicket(evento.detail.cita);
         });
+    }
+
+    disconnectedCallback() {
+        if (this.cerrarVista) {
+            this.cerrarVista();
+        }
     }
 
     error(texto) {
@@ -209,23 +213,79 @@ class PaginaBusquedaCitas extends PaginaBase {
         if (!cita || !cita.idConsulta) {
             return;
         }
-        if (this.avisoInstalar) {
-            this.avisoInstalar.mostrar();
+        let aviso = document.getElementById("avisoInstalarGlobal");
+        if (aviso && typeof aviso.mostrar === "function") {
+            aviso.mostrar();
         }
         this.mensaje.mostrar("cargando", "Generando el comprobante en el servidor…");
         new ConsultaService().descargarTicket(cita.idConsulta).then(blob => {
-            let url = URL.createObjectURL(blob);
+            this.mostrarVistaPrevia(blob, cita);
+        }).catch(error => {
+            this.mensaje.mostrar("error", error.message || "No se pudo mostrar el comprobante.");
+        });
+    }
+
+    mostrarVistaPrevia(blob, cita) {
+        if (this.cerrarVista) {
+            this.cerrarVista();
+        }
+        let url = URL.createObjectURL(blob);
+        let nombre = "cita-" + cita.idConsulta + ".pdf";
+        let capa = document.createElement("div");
+        capa.setAttribute("role", "dialog");
+        capa.setAttribute("aria-modal", "true");
+        capa.setAttribute("aria-label", "Vista previa del comprobante");
+        capa.style.cssText = "position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:1rem;background:rgba(11,25,40,.55)";
+        capa.innerHTML = `
+            <section style="display:flex;flex-direction:column;width:min(920px,100%);max-height:92vh;overflow:hidden;background:#fff;border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.3)">
+                <header style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 1rem;border-bottom:1px solid #d5dae0">
+                    <h3 style="margin:0;font-size:1.1rem;color:#2b3138">Vista previa del comprobante</h3>
+                    <button id="cerrar" type="button" aria-label="Cerrar vista previa" style="border:0;background:transparent;font-size:1.5rem;line-height:1;cursor:pointer">×</button>
+                </header>
+                <iframe id="pdf" title="Comprobante PDF" style="flex:1;width:100%;min-height:60vh;border:0;background:#f4f6f8"></iframe>
+                <p style="margin:0;padding:.5rem 1rem;font-size:.85rem;color:#6b7686">Si el documento no aparece, use el botón Descargar PDF.</p>
+                <footer style="display:flex;justify-content:flex-end;gap:.5rem;padding:.75rem 1rem;border-top:1px solid #d5dae0">
+                    <button id="cancelar" type="button" style="font:inherit;padding:.6rem 1rem;border:1px solid #b9d8f5;border-radius:8px;background:#fff;color:#0b3d6b;cursor:pointer">Cancelar</button>
+                    <button id="descargar" type="button" style="font:inherit;padding:.6rem 1rem;border:1px solid #007bff;border-radius:8px;background:#007bff;color:#fff;cursor:pointer">Descargar PDF</button>
+                </footer>
+            </section>
+        `;
+        let cerrada = false;
+        let cerrar = () => {
+            if (cerrada) {
+                return;
+            }
+            cerrada = true;
+            capa.remove();
+            URL.revokeObjectURL(url);
+            if (this.cerrarVista === cerrar) {
+                this.cerrarVista = null;
+            }
+        };
+        capa.querySelector("#cerrar").addEventListener("click", () => {
+            cerrar();
+            this.mensaje.mostrar("info", "Vista previa cerrada. El comprobante no se descargó.");
+        });
+        capa.querySelector("#cancelar").addEventListener("click", () => {
+            cerrar();
+            this.mensaje.mostrar("info", "Vista previa cerrada. El comprobante no se descargó.");
+        });
+        capa.querySelector("#descargar").addEventListener("click", () => {
             let enlace = document.createElement("a");
             enlace.href = url;
-            enlace.download = "cita-" + cita.idConsulta + ".pdf";
+            enlace.download = nombre;
             document.body.appendChild(enlace);
             enlace.click();
             enlace.remove();
-            URL.revokeObjectURL(url);
-            this.mensaje.mostrar("exito", "Comprobante PDF descargado.");
-        }).catch(error => {
-            this.mensaje.mostrar("error", error.message || "No se pudo descargar el comprobante.");
+            setTimeout(() => {
+                cerrar();
+                this.mensaje.mostrar("exito", "Comprobante PDF descargado.");
+            }, 200);
         });
+        capa.querySelector("#pdf").src = url;
+        this.cerrarVista = cerrar;
+        document.body.appendChild(capa);
+        this.mensaje.mostrar("exito", "Vista previa del comprobante lista.");
     }
 }
 customElements.define("pagina-busqueda-citas", PaginaBusquedaCitas);

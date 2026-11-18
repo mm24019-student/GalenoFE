@@ -3,7 +3,7 @@
  * Se usan tanto en la pantalla publica como en el login y el dashboard.
  */
 export function normalizar(texto) {
-    return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 
 export function nombreCompleto(persona) {
@@ -109,10 +109,11 @@ export function buscarCitaPorTexto(citas, texto) {
         return citas || [];
     }
     return (citas || []).filter(c => {
-        let pr = c.idPersonaRol || {};
+        let cita = c || {};
+        let pr = cita.idPersonaRol || {};
         return normalizar([
-            c.referenciaExterna,
-            c.observaciones,
+            cita.referenciaExterna,
+            cita.observaciones,
             nombreCompleto(pr.idPersona),
             nombreRol(pr),
             nombreClinica(pr)

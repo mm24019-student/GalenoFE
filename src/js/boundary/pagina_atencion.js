@@ -91,6 +91,7 @@ class PaginaAtencion extends PaginaBase {
                         <button id="guardar" type="button" class="primario">Guardar atención</button>
                         <button id="retroceder" type="button" class="secundario">← Paso anterior</button>
                         <button id="avanzar" type="button" class="primario">Completar y avanzar →</button>
+                        <button id="finalizar" type="button" class="secundario">Finalizar consulta</button>
                     </div>
                 </section>
             </div>
@@ -117,6 +118,8 @@ class PaginaAtencion extends PaginaBase {
         this.q("#guardar").addEventListener("click", () => this.guardar(false));
         this.q("#avanzar").addEventListener("click", () => this.guardar(true));
         this.q("#retroceder").addEventListener("click", () => this.retroceder());
+        this.q("#finalizar").addEventListener("click", () => this.finalizar());
+        this.q("#estado").addEventListener("change", () => this.actualizarBotones());
         this.cargar();
     }
 
@@ -314,6 +317,7 @@ class PaginaAtencion extends PaginaBase {
         let paso = this.pasoActual();
         if (!paso) {
             this.q("#atencion").classList.add("oculto");
+            this.actualizarBotones();
             return;
         }
         this.q("#atencion").classList.remove("oculto");
@@ -329,6 +333,7 @@ class PaginaAtencion extends PaginaBase {
         this.q("#estado").value = String(paso.estado || "PENDIENTE").toUpperCase();
         this.q("#valor").focus();
         this.cargarExamenes(definicion.idProcedimientoPaso);
+        this.actualizarBotones();
     }
 
     cargarExamenes(idDefinicion) {
@@ -553,6 +558,24 @@ class PaginaAtencion extends PaginaBase {
         }).catch(error => {
             this.mensaje.mostrar("error", error.message || "No se pudo agregar el procedimiento.");
         });
+    }
+
+    actualizarBotones() {
+        let paso = this.pasoActual();
+        let estado = this.q("#estado") ? this.q("#estado").value : "";
+        let definiciones = this.procedimientoActual && this.procedimientoActual.orden
+            ? this.procedimientoActual.orden : [];
+        let posicion = paso
+            ? definiciones.findIndex(d => d.idProcedimientoPaso === idDePasoConsulta(paso)) : -1;
+        let completado = estado === "COMPLETADO";
+        let haySiguiente = posicion >= 0 && posicion < definiciones.length - 1;
+        let esUltimo = definiciones.length > 0 && posicion === definiciones.length - 1;
+        this.q("#avanzar").disabled = !completado || !haySiguiente;
+        this.q("#finalizar").disabled = !completado || !esUltimo;
+    }
+
+    finalizar() {
+        location.hash = "#/dashboard";
     }
 }
 customElements.define("pagina-atencion", PaginaAtencion);

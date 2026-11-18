@@ -7,7 +7,7 @@ import PersonaRolService from "./persona_rol_service.js";
  * mensaje apto para mostrar al usuario.
  */
 export function buscarIdentidad(tipoDocumento, valorDocumento) {
-    let tipo = tipoDocumento || "";
+    let tipo = String(tipoDocumento || "").trim();
     let valor = String(valorDocumento || "").trim();
     if (!tipo) {
         return Promise.reject(new Error("Seleccione el tipo de documento."));
@@ -19,7 +19,7 @@ export function buscarIdentidad(tipoDocumento, valorDocumento) {
     let personaRol = new PersonaRolService();
     return documentos.buscar(valor, tipo).then(resp => {
         let documento = (resp.datos || []).find(d => d.idPersona);
-        if (!documento) {
+        if (!documento || !documento.idPersona || !documento.idPersona.idPersona) {
             throw new Error("No se encontró una persona con ese documento.");
         }
         let persona = documento.idPersona;

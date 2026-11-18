@@ -1,4 +1,4 @@
-import * as chai from "../../lib/chai/index.js";
+import * as chai from "../lib/chai/index.js";
 import PaginaBase from "../../../src/js/boundary/pagina_base.js";
 mocha.setup("tdd");
 

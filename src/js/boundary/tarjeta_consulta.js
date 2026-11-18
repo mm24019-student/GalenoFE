@@ -89,21 +89,21 @@ class TarjetaConsulta extends HTMLElement {
 
         let lista = this.root.querySelector("#listaProcedimientos");
         let procedimientos = this._detalle ? this._detalle.procedimientos : null;
-        if (procedimientos === null) {
+        if (procedimientos === null || procedimientos === undefined) {
             let cargando = document.createElement("div");
             cargando.className = "vacio";
             cargando.textContent = "Cargando procedimientos y pasos…";
             lista.replaceChildren(cargando);
             return;
         }
-        if (procedimientos.length === 0) {
+        if (!Array.isArray(procedimientos) || procedimientos.length === 0) {
             let vacio = document.createElement("div");
             vacio.className = "vacio";
             vacio.textContent = "Esta consulta no tiene procedimientos registrados.";
             lista.replaceChildren(vacio);
             return;
         }
-        lista.replaceChildren(...procedimientos.map(procedimiento => {
+        lista.replaceChildren(...procedimientos.filter(Boolean).map(procedimiento => {
             let caja = document.createElement("div");
             caja.className = "procedimiento";
             let titulo = document.createElement("h5");

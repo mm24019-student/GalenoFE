@@ -3,5 +3,17 @@
  * La URL del backend vive en un solo lugar para no tener que cambiarla en dos
  * archivos cuando se despliega en otro puerto o servidor.
  */
-export const URL_API = "http://localhost:9080/GalenoSV-1.0-SNAPSHOT/resources/";
 export const MENSAJE_ESTADO_BACKEND = "galeno-estado-backend";
+export const MENSAJE_CONFIGURAR_API = "galeno-configurar-api";
+
+const API_POR_DEFECTO = "http://localhost:9080/GalenoSV-1.0-SNAPSHOT/resources/";
+
+function normalizar(url) {
+    return String(url).trim().replace(/\/+$/, "") + "/";
+}
+
+export const URL_API = normalizar(
+    (typeof globalThis.GALENO_URL_API === "string" && globalThis.GALENO_URL_API.trim())
+        ? globalThis.GALENO_URL_API
+        : API_POR_DEFECTO
+);

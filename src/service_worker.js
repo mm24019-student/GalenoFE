@@ -2,10 +2,19 @@
 // - Al instalarse guarda TODA la app (precache), asi abre sin servidor.
 // - Archivos de la app: primero la red, y si falla lo guardado.
 // - GET de la API REST: primero la red, y si el backend esta apagado, lo ultimo consultado.
-import { URL_API, MENSAJE_ESTADO_BACKEND } from "./js/model/config.js";
+import { URL_API, MENSAJE_ESTADO_BACKEND, MENSAJE_CONFIGURAR_API } from "./js/model/config.js";
 
-const CACHE = "galeno-fe-v11";
+const CACHE = "galeno-fe-v22";
 const CACHE_API = "galeno-api-v1";
+let urlApi = URL_API;
+
+self.addEventListener("message", evento => {
+    let datos = evento.data;
+    if (datos && datos.tipo === MENSAJE_CONFIGURAR_API
+            && typeof datos.url === "string" && datos.url.trim()) {
+        urlApi = datos.url.trim().replace(/\/+$/, "") + "/";
+    }
+});
 
 
 // Rutas relativas a este archivo (src/)
@@ -118,7 +127,7 @@ function avisarEstado(idCliente, conectado) {
 
 // Intenta la red; si funciona guarda una copia, si falla devuelve la copia guardada.
 function redPrimero(peticion, nombreCache, alFallar, idCliente) {
-    const esApi = peticion.url.startsWith(URL_API);
+    const esApi = peticion.url.startsWith(urlApi);
     return fetch(peticion).then(respuesta => {
         if (respuesta.ok) {
             const copia = respuesta.clone();
@@ -148,7 +157,7 @@ self.addEventListener("fetch", evento => {
     }
 
     // API REST
-    if (peticion.url.startsWith(URL_API)) {
+    if (peticion.url.startsWith(urlApi)) {
         evento.respondWith(redPrimero(peticion, CACHE_API, () => Response.error(), evento.clientId));
         return;
     }

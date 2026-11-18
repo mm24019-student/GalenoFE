@@ -1,4 +1,4 @@
-import * as chai from "../../lib/chai/index.js";
+import * as chai from "../lib/chai/index.js";
 import "../../../src/js/boundary/galeno_router.js";
 import { sesion } from "../../../src/js/control/sesion.js";
 mocha.setup("tdd");

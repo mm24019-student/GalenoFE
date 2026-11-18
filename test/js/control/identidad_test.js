@@ -1,5 +1,5 @@
-import * as chai from "../../lib/chai/index.js";
-import sinon from "../../lib/sinon/sinon-esm.js";
+import * as chai from "../lib/chai/index.js";
+import sinon from "../lib/sinon/sinon-esm.js";
 import { buscarIdentidad } from "../../../src/js/control/identidad.js";
 import DocumentoService from "../../../src/js/control/documento_service.js";
 import PersonaRolService from "../../../src/js/control/persona_rol_service.js";

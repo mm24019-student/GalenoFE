@@ -15,7 +15,7 @@ plantilla.innerHTML = `
             <ul id="procedimientos"></ul>
         </section>
         <footer>
-            <button id="ticket" type="button">Descargar comprobante PDF</button>
+            <button id="ticket" type="button">Ver comprobante PDF</button>
         </footer>
     </article>
 `;
@@ -23,7 +23,7 @@ plantilla.innerHTML = `
 /**
  * <tarjeta-cita>
  * Card de una cita con fecha/hora, clinica y procedimientos. Emite el evento
- * "descargar-ticket" con el id de la consulta cuando se pide el PDF.
+ * "descargar-ticket" con el id de la consulta cuando se pide ver el PDF.
  */
 class TarjetaCita extends HTMLElement {
 

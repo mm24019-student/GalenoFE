@@ -1,5 +1,5 @@
-import * as chai from "../../lib/chai/index.js";
-import sinon from "../../lib/sinon/sinon-esm.js";
+import * as chai from "../lib/chai/index.js";
+import sinon from "../lib/sinon/sinon-esm.js";
 import TipoDocumentoService from "../../../src/js/control/tipo_documento_service.js";
 import DocumentoService from "../../../src/js/control/documento_service.js";
 import PersonaRolService from "../../../src/js/control/persona_rol_service.js";
@@ -21,7 +21,7 @@ suite("boundary/pagina-busqueda-citas", function () {
     teardown(function () {
         stubs.forEach(s => s.restore());
         stubs = [];
-        document.querySelectorAll("pagina-busqueda-citas").forEach(e => e.remove());
+        document.querySelectorAll('pagina-busqueda-citas, [role="dialog"][aria-modal="true"]').forEach(e => e.remove());
     });
 
     function crear() {
@@ -113,6 +113,29 @@ suite("boundary/pagina-busqueda-citas", function () {
         let el = crear();
         chai.expect(() => el.descargarTicket(null)).to.not.throw();
         chai.expect(() => el.descargarTicket({})).to.not.throw();
+    });
+
+    test("descargar ticket deberia mostrar vista previa sin descargar directamente", async function () {
+        let blob = new Blob(["%PDF-1.4"], { type: "application/pdf" });
+        stubs.push(sinon.stub(ConsultaService.prototype, "descargarTicket").resolves(blob));
+        let crearUrl = sinon.stub(URL, "createObjectURL").returns("blob:pdf");
+        let liberarUrl = sinon.stub(URL, "revokeObjectURL");
+        let clic = sinon.stub(HTMLAnchorElement.prototype, "click");
+        try {
+            let el = crear(); await tick(10);
+            el.descargarTicket({ idConsulta: "c1" });
+            await tick(40);
+            let vista = document.querySelector('[role="dialog"][aria-modal="true"]');
+            chai.expect(vista).to.exist;
+            chai.expect(vista.querySelector("#pdf").getAttribute("src")).to.include("blob:pdf");
+            chai.expect(clic.called).to.equal(false);
+            vista.querySelector("#cancelar").click();
+            chai.expect(liberarUrl.calledWith("blob:pdf")).to.equal(true);
+        } finally {
+            crearUrl.restore();
+            liberarUrl.restore();
+            clic.restore();
+        }
     });
 
     test("descargar ticket con error deberia mostrar mensaje", async function () {

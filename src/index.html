@@ -8,10 +8,18 @@
     <meta name="theme-color" content="#007bff">
     <link rel="icon" href="recursos/iconos/icono-192.png" type="image/png">
     <link rel="stylesheet" href="recursos/estilos/principal.css">
+    <script>
+        try {
+            const api = localStorage.getItem("galeno-url-api");
+            if (api) window.GALENO_URL_API = api;
+        } catch (e) {
+        }
+    </script>
     <script type="module" src="js/boundary/galeno_app.js"></script>
 </head>
 <body>
     <aviso-sin-conexion></aviso-sin-conexion>
+    <aviso-instalar-app id="avisoInstalarGlobal"></aviso-instalar-app>
     <galeno-layout>
         <span slot="logo">🦷</span>
         <span slot="titulo">GalenoSV</span>

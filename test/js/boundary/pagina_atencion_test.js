@@ -1,5 +1,5 @@
-import * as chai from "../../lib/chai/index.js";
-import sinon from "../../lib/sinon/sinon-esm.js";
+import * as chai from "../lib/chai/index.js";
+import sinon from "../lib/sinon/sinon-esm.js";
 import { sesion } from "../../../src/js/control/sesion.js";
 import ConsultaService from "../../../src/js/control/consulta_service.js";
 import ConsultaProcedimientoService from "../../../src/js/control/consulta_procedimiento_service.js";
@@ -195,6 +195,37 @@ suite("boundary/pagina-atencion", function () {
         await el.registrarExamenes(paso);
         chai.expect(OrdenExamenService.prototype.create.called).to.equal(true);
         chai.expect(ExamenResultadoService.prototype.create.called).to.equal(true);
+    });
+
+    test("botones deberian deshabilitarse mientras el paso este pendiente", async function () {
+        baseStubs();
+        let el = crear();
+        await tick(80);
+        chai.expect(el.q("#avanzar").disabled).to.equal(true);
+        chai.expect(el.q("#finalizar").disabled).to.equal(true);
+    });
+
+    test("completar y avanzar deberia habilitarse solo con paso completado y siguiente", async function () {
+        baseStubs();
+        let el = crear();
+        await tick(80);
+        el.q("#estado").value = "COMPLETADO";
+        el.q("#estado").dispatchEvent(new Event("change"));
+        chai.expect(el.q("#avanzar").disabled).to.equal(false);
+        chai.expect(el.q("#finalizar").disabled).to.equal(true);
+    });
+
+    test("finalizar consulta deberia habilitarse en el ultimo paso completado", async function () {
+        baseStubs({ defs: [defA], secs: [] });
+        let el = crear();
+        await tick(80);
+        chai.expect(el.q("#finalizar").textContent).to.include("Finalizar consulta");
+        el.q("#estado").value = "COMPLETADO";
+        el.q("#estado").dispatchEvent(new Event("change"));
+        chai.expect(el.q("#avanzar").disabled).to.equal(true);
+        chai.expect(el.q("#finalizar").disabled).to.equal(false);
+        el.q("#finalizar").click();
+        chai.expect(location.hash).to.equal("#/dashboard");
     });
 });
 

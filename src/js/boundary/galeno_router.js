@@ -43,6 +43,7 @@ class GalenoRouter extends HTMLElement {
         let resolucion = resolverRuta(hash, this.sesion.activa);
         if (resolucion.redirigir) {
             history.replaceState(null, "", resolucion.redirigir);
+            window.dispatchEvent(new Event("hashchange"));
             return this.navegar(resolucion.redirigir, enfocar);
         }
         let clave = resolucion.ruta + "?" + (resolucion.parametros ? resolucion.parametros.toString() : "");

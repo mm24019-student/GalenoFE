@@ -42,7 +42,7 @@ export function ordenarPasos(definiciones, secuencias) {
 
     let aristas = new Map();
     let conPredecesor = new Set();
-    (secuencias || []).forEach(s => {
+    (secuencias || []).filter(Boolean).forEach(s => {
         let destino = idDeSecuencia(s.idProcedimientoPaso);
         let origen = idDeSecuencia(s.idProcedimientoPasoReferencia);
         if (!origen || !destino || !porId.has(origen) || !porId.has(destino)) {
@@ -103,12 +103,12 @@ export function indicePasoActual(pasosConsulta, orden) {
         posiciones.set(idDePaso(definicion), indice);
     });
     pasos.sort((a, b) => {
-        let ia = posiciones.has(idDePasoConsulta(a)) ? posiciones.get(idDePasoConsulta(a)) : 999;
-        let ib = posiciones.has(idDePasoConsulta(b)) ? posiciones.get(idDePasoConsulta(b)) : 999;
+        let ia = posiciones.has(idDePasoConsulta(a)) ? posiciones.get(idDePasoConsulta(a)) : -1;
+        let ib = posiciones.has(idDePasoConsulta(b)) ? posiciones.get(idDePasoConsulta(b)) : -1;
         return ia - ib;
     });
     let indice = pasos.findIndex(p => {
-        let estado = String(p.estado || "").toUpperCase();
+        let estado = String((p && p.estado) || "").toUpperCase();
         return estado !== "COMPLETADO" && estado !== "CANCELADO";
     });
     return indice >= 0 ? indice : Math.max(0, pasos.length - 1);
@@ -120,8 +120,8 @@ export function pasosOrdenados(pasosConsulta, orden) {
         posiciones.set(idDePaso(definicion), indice);
     });
     return (pasosConsulta || []).slice().sort((a, b) => {
-        let ia = posiciones.has(idDePasoConsulta(a)) ? posiciones.get(idDePasoConsulta(a)) : 999;
-        let ib = posiciones.has(idDePasoConsulta(b)) ? posiciones.get(idDePasoConsulta(b)) : 999;
+        let ia = posiciones.has(idDePasoConsulta(a)) ? posiciones.get(idDePasoConsulta(a)) : -1;
+        let ib = posiciones.has(idDePasoConsulta(b)) ? posiciones.get(idDePasoConsulta(b)) : -1;
         return ia - ib;
     });
 }

@@ -36,13 +36,13 @@ class ArbolPasos extends HTMLElement {
     pintar() {
         let lista = this.root.querySelector("#lista");
         if (this._pasos.length === 0) {
-            let vacio = document.createElement("div");
+            let vacio = document.createElement("li");
             vacio.className = "vacio";
             vacio.textContent = "Todavía no hay pasos registrados.";
             lista.replaceChildren(vacio);
             return;
         }
-        let pasos = pasosOrdenados(this._pasos, this._orden);
+        let pasos = pasosOrdenados(this._pasos, this._orden).filter(Boolean);
         lista.replaceChildren(...pasos.map((paso, indice) => this.item(paso, indice)));
     }
 
@@ -76,7 +76,7 @@ class ArbolPasos extends HTMLElement {
         resumen.textContent = "Ver registro del paso";
         let registro = document.createElement("p");
         registro.className = "registro";
-        registro.textContent = paso.valor && paso.valor.trim() ? paso.valor : "Sin registro capturado.";
+        registro.textContent = String(paso.valor || "").trim() ? String(paso.valor) : "Sin registro capturado.";
         detalles.append(resumen, registro);
 
         caja.append(linea, meta, detalles);

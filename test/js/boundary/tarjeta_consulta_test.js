@@ -1,4 +1,4 @@
-import * as chai from "../../lib/chai/index.js";
+import * as chai from "../lib/chai/index.js";
 import "../../../src/js/boundary/tarjeta_consulta.js";
 mocha.setup("tdd");
 

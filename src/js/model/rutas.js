@@ -32,7 +32,9 @@ export function leerHash(hash) {
 export function construirHash(ruta, parametros) {
     let texto = new URLSearchParams();
     Object.entries(parametros || {}).forEach(([clave, valor]) => {
-        if (valor !== null && valor !== undefined && String(valor) !== "") {
+        if (valor === undefined) {
+            texto.set(clave, "");
+        } else if (valor !== null && String(valor) !== "") {
             texto.set(clave, String(valor));
         }
     });

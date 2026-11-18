@@ -1,4 +1,4 @@
-import * as chai from "../../lib/chai/index.js";
+import * as chai from "../lib/chai/index.js";
 import { Sesion } from "../../../src/js/control/sesion.js";
 mocha.setup("tdd");
 
