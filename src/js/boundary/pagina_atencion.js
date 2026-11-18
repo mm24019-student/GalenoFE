@@ -248,7 +248,7 @@ class PaginaAtencion extends PaginaBase {
             return;
         }
         this.procedimientoActual = procedimiento;
-        this.indiceActual = indicePasoActual(procedimiento.pasos, procedimiento.orden);
+        this.indiceActual = this.indicePasoInicial();
         let select = this.q("#procedimiento");
         select.replaceChildren(...this.procedimientos.map(p => {
             let opcion = document.createElement("option");
@@ -268,6 +268,50 @@ class PaginaAtencion extends PaginaBase {
         return pasosOrdenados(this.procedimientoActual.pasos, this.procedimientoActual.orden);
     }
 
+    indicePasoInicial() {
+        let pasos = this.pasosActuales();
+        if (pasos.length === 0) {
+            return 0;
+        }
+        let propios = pasos
+            .map((paso, indice) => ({ paso, indice }))
+            .filter(item => this.esPasoPropio(item.paso));
+        let pendientes = propios.filter(item => {
+            let estado = String(item.paso.estado || "PENDIENTE").toUpperCase();
+            return estado === "PENDIENTE" || estado === "EN_PROCESO";
+        });
+        if (pendientes.length > 0) {
+            return pendientes[0].indice;
+        }
+        return propios.length > 0 ? propios[0].indice : 0;
+    }
+
+    definicionDe(paso) {
+        let id = idDePasoConsulta(paso);
+        let definiciones = this.procedimientoActual ? this.procedimientoActual.definiciones || [] : [];
+        return definiciones.find(d => d && d.idProcedimientoPaso === id)
+            || (paso && paso.idProcedimientoPaso) || {};
+    }
+
+    idRolDePaso(paso) {
+        let definicion = this.definicionDe(paso);
+        if (definicion.idRol) {
+            return definicion.idRol.idRol || null;
+        }
+        return paso && paso.idPersonaRol && paso.idPersonaRol.idRol
+            ? paso.idPersonaRol.idRol.idRol || null
+            : null;
+    }
+
+    esPasoPropio(paso) {
+        let idRolSesion = sesion.rol ? sesion.rol.idRol : null;
+        if (!idRolSesion) {
+            return false;
+        }
+        let idRolPaso = this.idRolDePaso(paso);
+        return !idRolPaso || idRolPaso === idRolSesion;
+    }
+
     pintarPasos() {
         let lista = this.q("#pasos");
         let pasos = this.pasosActuales();
@@ -285,6 +329,10 @@ class PaginaAtencion extends PaginaBase {
             let li = document.createElement("li");
             let boton = document.createElement("button");
             boton.type = "button";
+            boton.disabled = !this.esPasoPropio(paso);
+            if (boton.disabled) {
+                boton.title = "Este paso corresponde a otro rol";
+            }
             if (indice === this.indiceActual) {
                 boton.setAttribute("aria-current", "step");
             }
@@ -321,17 +369,26 @@ class PaginaAtencion extends PaginaBase {
             return;
         }
         this.q("#atencion").classList.remove("oculto");
-        let definicion = paso.idProcedimientoPaso || {};
+        let definicion = this.definicionDe(paso);
+        let propio = this.esPasoPropio(paso);
         this.q("#tituloPaso").textContent = "Atención del paso: " + (definicion.nombre || "Paso");
         let persona = paso.idPersonaRol && paso.idPersonaRol.idPersona
             ? nombreCompleto(paso.idPersonaRol.idPersona) : "Sin responsable";
         let rol = paso.idPersonaRol && paso.idPersonaRol.idRol
             ? paso.idPersonaRol.idRol.nombre : "";
+        let rolDefinicion = definicion.idRol && definicion.idRol.nombre ? definicion.idRol.nombre : rol;
         this.q("#metaPaso").textContent =
-            "Responsable: " + persona + (rol ? " (" + rol + ")" : "") + " · " + formatearFecha(paso.fechaInicio);
+            "Responsable: " + persona + (rol ? " (" + rol + ")" : "") + " · " + formatearFecha(paso.fechaInicio)
+            + (propio ? "" : " · Requiere rol: " + (rolDefinicion || "otro"));
         this.q("#valor").value = paso.valor || "";
         this.q("#estado").value = String(paso.estado || "PENDIENTE").toUpperCase();
-        this.q("#valor").focus();
+        this.q("#valor").disabled = !propio;
+        this.q("#estado").disabled = !propio;
+        this.q("#panelExamenes").disabled = !propio;
+        this.q("#guardar").disabled = !propio;
+        if (propio) {
+            this.q("#valor").focus();
+        }
         this.cargarExamenes(definicion.idProcedimientoPaso);
         this.actualizarBotones();
     }
@@ -386,6 +443,10 @@ class PaginaAtencion extends PaginaBase {
     guardar(avanzar) {
         let paso = this.pasoActual();
         if (!paso) {
+            return;
+        }
+        if (!this.esPasoPropio(paso)) {
+            this.mensaje.mostrar("error", "Este paso corresponde a otro rol.");
             return;
         }
         let valor = this.q("#valor").value.trim();
@@ -467,6 +528,10 @@ class PaginaAtencion extends PaginaBase {
         let procedimiento = this.procedimientoActual;
         let actual = this.pasoActual();
         if (!procedimiento || !actual) {
+            return;
+        }
+        if (!this.esPasoPropio(actual)) {
+            this.mensaje.mostrar("error", "Este paso corresponde a otro rol.");
             return;
         }
         let definiciones = procedimiento.orden || [];
@@ -568,13 +633,17 @@ class PaginaAtencion extends PaginaBase {
         let posicion = paso
             ? definiciones.findIndex(d => d.idProcedimientoPaso === idDePasoConsulta(paso)) : -1;
         let completado = estado === "COMPLETADO";
+        let propio = paso ? this.esPasoPropio(paso) : false;
         let haySiguiente = posicion >= 0 && posicion < definiciones.length - 1;
         let esUltimo = definiciones.length > 0 && posicion === definiciones.length - 1;
-        this.q("#avanzar").disabled = !completado || !haySiguiente;
-        this.q("#finalizar").disabled = !completado || !esUltimo;
+        this.q("#avanzar").disabled = !propio || !completado || !haySiguiente;
+        this.q("#finalizar").disabled = !propio || !completado || !esUltimo;
     }
 
     finalizar() {
+        if (this.q("#finalizar").disabled) {
+            return;
+        }
         location.hash = "#/dashboard";
     }
 }

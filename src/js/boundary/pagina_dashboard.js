@@ -185,6 +185,7 @@ class PaginaDashboard extends PaginaBase {
         this.mensaje.mostrar("cargando", "Buscando consultas…");
         new ConsultaService().buscar({
             idClinica: sesion.clinica.idClinica,
+            idRol: sesion.rol.idRol,
             desde: this.q("#desde").value,
             hasta: this.q("#hasta").value
         }).then(resp => {

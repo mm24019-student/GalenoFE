@@ -4,7 +4,7 @@
 // - GET de la API REST: primero la red, y si el backend esta apagado, lo ultimo consultado.
 import { URL_API, MENSAJE_ESTADO_BACKEND, MENSAJE_CONFIGURAR_API } from "./js/model/config.js";
 
-const CACHE = "galeno-fe-v22";
+const CACHE = "galeno-fe-v24";
 const CACHE_API = "galeno-api-v1";
 let urlApi = URL_API;
 

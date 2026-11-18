@@ -227,6 +227,33 @@ suite("boundary/pagina-atencion", function () {
         el.q("#finalizar").click();
         chai.expect(location.hash).to.equal("#/dashboard");
     });
+
+    test("pasos de otro rol deberian deshabilitarse", async function () {
+        let defC = { idProcedimientoPaso: "c", nombre: "Paso C", idRol: { idRol: "r2", nombre: "Enfermera" } };
+        let pasoA = { idConsultaProcedimientoPaso: "cp-a", estado: "PENDIENTE", fechaInicio: "2026-01-01T08:00:00Z", valor: "", idProcedimientoPaso: { idProcedimientoPaso: "a", nombre: "Paso A" } };
+        let pasoC = { idConsultaProcedimientoPaso: "cp-c", estado: "PENDIENTE", fechaInicio: "2026-01-01T09:00:00Z", valor: "", idProcedimientoPaso: { idProcedimientoPaso: "c", nombre: "Paso C" } };
+        baseStubs({
+            defs: [defA, defC],
+            secs: [{ idProcedimientoPasoReferencia: "a", idProcedimientoPaso: "c" }],
+            pasos: [pasoA, pasoC]
+        });
+        let el = crear();
+        await tick(80);
+        let botones = Array.from(el.root.querySelectorAll("#pasos button"));
+        chai.expect(botones.length).to.equal(2);
+        chai.expect(botones[0].disabled).to.equal(false);
+        chai.expect(botones[1].disabled).to.equal(true);
+        chai.expect(el.q("#guardar").disabled).to.equal(false);
+        el.indiceActual = 1;
+        el.pintarPasos();
+        el.pintarAtencion();
+        chai.expect(el.q("#valor").disabled).to.equal(true);
+        chai.expect(el.q("#estado").disabled).to.equal(true);
+        chai.expect(el.q("#guardar").disabled).to.equal(true);
+        chai.expect(el.q("#avanzar").disabled).to.equal(true);
+        chai.expect(el.q("#finalizar").disabled).to.equal(true);
+        chai.expect(el.q("#metaPaso").textContent).to.include("Enfermera");
+    });
 });
 
 mocha.run();

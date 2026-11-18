@@ -86,7 +86,7 @@ suite("boundary/pagina-dashboard", function () {
         el.elegirContexto(); await tick(60);
         let filtros = ConsultaService.prototype.buscar.firstCall.args[0];
         chai.expect(filtros.idClinica).to.equal("c1");
-        chai.expect(filtros.idRol).to.equal(undefined);
+        chai.expect(filtros.idRol).to.equal("r1");
         chai.expect(el.resultados.hidden).to.equal(false);
         chai.expect(el.root.querySelectorAll("tarjeta-consulta").length).to.equal(1);
     });
