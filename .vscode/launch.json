@@ -20,7 +20,7 @@
             "port": 9222,
             "request": "launch",
             "name": "BrowserSync Debug",
-            "url": "http://localhost:3000/src/",
+            "url": "http://localhost:3000/test/index.html",
             "webRoot": "${workspaceFolder}/",
             "preLaunchTask": "debugBrowserSync",
             "postDebugTask": "matarBrowserSync"
