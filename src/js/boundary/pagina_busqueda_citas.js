@@ -6,7 +6,7 @@ import ConsultaService from "../control/consulta_service.js";
 import ConsultaProcedimientoService from "../control/consulta_procedimiento_service.js";
 import ProcedimientoService from "../control/procedimiento_service.js";
 import { buscarIdentidad } from "../control/identidad.js";
-import { clinicasDePaciente, nombreCompleto } from "../model/citas.js";
+import { asignacionPacienteEnClinica, clinicasDePaciente, nombreCompleto } from "../model/citas.js";
 import { hoyISO, sumarDiasISO } from "../model/fechas.js";
 
 /**
@@ -23,6 +23,8 @@ class PaginaBusquedaCitas extends PaginaBase {
     constructor() {
         super();
         this.paciente = null;
+        this.tipoDocumento = null;
+        this.valorDocumento = null;
         this.asignaciones = [];
         this.citas = [];
         this.catalogoProcedimientos = null;
@@ -100,16 +102,23 @@ class PaginaBusquedaCitas extends PaginaBase {
     }
 
     buscarPaciente(datos) {
+        this.paciente = null;
+        this.tipoDocumento = null;
+        this.valorDocumento = null;
+        this.asignaciones = [];
+        this.filtros.hidden = true;
+        this.resultados.hidden = true;
+        this.root.querySelector("#cuadricula").replaceChildren();
+        this.root.querySelector("#paciente").textContent = "";
         this.mensaje.mostrar("cargando", "Buscando la identidad y sus clínicas…");
         buscarIdentidad(datos.tipo, datos.valor).then(identidad => {
             this.paciente = identidad.persona;
+            this.tipoDocumento = String(datos.tipo || "").trim();
+            this.valorDocumento = String(datos.valor || "").trim();
             this.asignaciones = identidad.asignaciones;
             let clinicas = clinicasDePaciente(this.asignaciones);
             this.selector.listo();
-            this.resultados.hidden = true;
-            this.root.querySelector("#cuadricula").replaceChildren();
             if (clinicas.length === 0) {
-                this.filtros.hidden = true;
                 this.mensaje.mostrar("error",
                     "La persona no está registrada como paciente en ninguna clínica.");
                 return;
@@ -129,12 +138,15 @@ class PaginaBusquedaCitas extends PaginaBase {
         }).catch(error => {
             this.filtros.hidden = true;
             this.paciente = null;
+            this.tipoDocumento = null;
+            this.valorDocumento = null;
+            this.asignaciones = [];
             this.error(error);
         });
     }
 
     buscarCitas() {
-        if (!this.paciente) {
+        if (!this.paciente || !this.tipoDocumento || !this.valorDocumento) {
             this.mensaje.mostrar("error", "Primero identifíquese con su documento.");
             return;
         }
@@ -142,12 +154,16 @@ class PaginaBusquedaCitas extends PaginaBase {
             this.mensaje.mostrar("error", "La fecha \"Desde\" no puede ser posterior a \"Hasta\".");
             return;
         }
+        let idClinica = this.root.querySelector("#clinica").value;
+        let asignacion = asignacionPacienteEnClinica(this.asignaciones, idClinica);
         let servicio = new ConsultaService();
         this.mensaje.mostrar("cargando", "Buscando citas…");
         servicio.buscar({
-            tipoDocumento: this.selector.tipo,
-            valorDocumento: this.selector.valor.trim(),
-            idClinica: this.root.querySelector("#clinica").value,
+            tipoDocumento: this.tipoDocumento,
+            valorDocumento: this.valorDocumento,
+            idPersona: this.paciente.idPersona,
+            idPersonaRol: asignacion ? asignacion.idPersonaRol : null,
+            idClinica: idClinica,
             desde: this.desde.value,
             hasta: this.hasta.value
         }).then(resp => {

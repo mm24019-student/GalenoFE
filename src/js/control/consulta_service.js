@@ -9,7 +9,7 @@ class ConsultaService extends DefaultService {
     /**
      * Busca citas por documento, clinica y rango de fechas. Los filtros vacios
      * simplemente no se envian.
-     * @param {{tipoDocumento?:string, valorDocumento?:string, idClinica?:string, idRol?:string, desde?:string, hasta?:string, max?:number}} filtros
+     * @param {{tipoDocumento?:string, valorDocumento?:string, idClinica?:string, idPersona?:string, idPersonaRol?:string, idRol?:string, desde?:string, hasta?:string, max?:number}} filtros
      */
     buscar(filtros) {
         let parametros = new URLSearchParams();

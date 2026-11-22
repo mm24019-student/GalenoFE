@@ -50,6 +50,13 @@ export function asignacionesPaciente(asignaciones) {
     return (asignaciones || []).filter(esPaciente);
 }
 
+export function asignacionPacienteEnClinica(asignaciones, idClinica) {
+    return asignacionesPaciente(asignaciones).find(asignacion => {
+        let clinica = clinicaDe(asignacion);
+        return clinica && clinica.idClinica === idClinica;
+    }) || null;
+}
+
 export function asignacionesEmpleado(asignaciones) {
     return (asignaciones || []).filter(esEmpleado);
 }

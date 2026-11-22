@@ -50,6 +50,16 @@ suite("ConsultaService especificos", function () {
         }).catch(done);
     });
 
+    test("buscar deberia enviar idPersona e idPersonaRol", function (done) {
+        stubFetch = sinon.stub(window, "fetch").resolves(new Response(JSON.stringify([]), { status: 200 }));
+        new ConsultaService().buscar({ idPersona: "p1", idPersonaRol: "pr1" }).then(() => {
+            let url = stubFetch.firstCall.args[0];
+            chai.expect(url).to.include("idPersona=p1");
+            chai.expect(url).to.include("idPersonaRol=pr1");
+            done();
+        }).catch(done);
+    });
+
     test("buscar con filtros null/undefined no deberia lanzar", function (done) {
         stubFetch = sinon.stub(window, "fetch").callsFake(() => Promise.resolve(new Response(JSON.stringify([]), { status: 200 })));
         new ConsultaService().buscar().then(() => new ConsultaService().buscar(null)).then(() => {

@@ -30,6 +30,18 @@ suite("boundary/pagina-busqueda-citas", function () {
         return el;
     }
 
+    function identificar(el) {
+        el.paciente = { idPersona: "p1" };
+        el.tipoDocumento = "t1";
+        el.valorDocumento = "123";
+        el.asignaciones = [{
+            idPersonaRol: "pr1",
+            rol: { nombre: "Paciente" },
+            clinica: { idClinica: "c1", nombre: "Central" }
+        }];
+        el.root.querySelector("#clinica").appendChild(new Option("Central", "c1"));
+    }
+
     test("buscar paciente sin clinicas de paciente deberia mostrar error", async function () {
         stubs.push(sinon.stub(DocumentoService.prototype, "buscar").resolves({ datos: [{ idDocumento: "d1", idPersona: { idPersona: "p1", nombres: "Ana" } }] }));
         stubs.push(sinon.stub(PersonaRolService.prototype, "porPersona").resolves({ datos: [{ rol: { nombre: "Doctor" }, clinica: { idClinica: "c1", nombre: "C1" } }] }));
@@ -42,13 +54,15 @@ suite("boundary/pagina-busqueda-citas", function () {
 
     test("buscar paciente con clinica deberia mostrar filtros y nombre", async function () {
         stubs.push(sinon.stub(DocumentoService.prototype, "buscar").resolves({ datos: [{ idDocumento: "d1", idPersona: { idPersona: "p1", nombres: "Ana", apellidos: "Lopez" } }] }));
-        stubs.push(sinon.stub(PersonaRolService.prototype, "porPersona").resolves({ datos: [{ rol: { nombre: "Paciente" }, clinica: { idClinica: "c1", nombre: "Central" } }] }));
+        stubs.push(sinon.stub(PersonaRolService.prototype, "porPersona").resolves({ datos: [{ idPersonaRol: "pr1", rol: { nombre: "Paciente" }, clinica: { idClinica: "c1", nombre: "Central" } }] }));
         let el = crear(); await tick(10);
         el.buscarPaciente({ tipo: "t1", valor: "123" });
         await tick(40);
         chai.expect(el.filtros.hidden).to.equal(false);
         chai.expect(el.root.querySelector("#paciente").textContent).to.include("Ana");
         chai.expect(el.root.querySelector("#clinica option").textContent).to.include("Central");
+        chai.expect(el.tipoDocumento).to.equal("t1");
+        chai.expect(el.valorDocumento).to.equal("123");
     });
 
     test("buscar citas sin paciente deberia informar error", async function () {
@@ -59,38 +73,40 @@ suite("boundary/pagina-busqueda-citas", function () {
 
     test("rango de fechas invalido deberia mostrar error", async function () {
         let el = crear(); await tick(10);
-        el.paciente = { idPersona: "p1" };
+        identificar(el);
         el.desde.value = "2026-02-02";
         el.hasta.value = "2026-01-01";
         el.buscarCitas();
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("Desde");
     });
 
-    test("buscar citas deberia pintar resultados y procedimientos", async function () {
+    test("buscar citas deberia usar la identidad confirmada y pintar resultados", async function () {
         stubs.push(sinon.stub(ProcedimientoService.prototype, "findRange").resolves({ datos: [{ idProcedimiento: "pr1", nombre: "Limpieza" }] }));
-        stubs.push(sinon.stub(ConsultaService.prototype, "buscar").resolves({ datos: [{ idConsulta: "c1", referenciaExterna: "R1", fechaInicio: "2026-01-01T00:00:00Z", idPersonaRol: { clinica: { nombre: "Central" } } }] }));
+        let buscar = sinon.stub(ConsultaService.prototype, "buscar").resolves({ datos: [{ idConsulta: "c1", referenciaExterna: "R1", fechaInicio: "2026-01-01T00:00:00Z", idPersonaRol: { clinica: { nombre: "Central" } } }] });
+        stubs.push(buscar);
         stubs.push(sinon.stub(ConsultaProcedimientoService.prototype, "porConsulta").resolves({ datos: [{ idProcedimiento: "pr1" }] }));
         let el = crear(); await tick(10);
-        el.paciente = { idPersona: "p1" };
-        el.selector.root.querySelector("#tipo").value = "t1";
-        el.selector.root.querySelector("#valor").value = "123";
-        el.root.querySelector("#clinica").appendChild(new Option("Central", "c1"));
+        identificar(el);
+        el.selector.root.querySelector("#valor").value = "999";
         el.desde.value = "2026-01-01"; el.hasta.value = "2026-12-31";
         el.buscarCitas();
         await tick(60);
         chai.expect(el.resultados.hidden).to.equal(false);
         chai.expect(el.root.querySelectorAll("tarjeta-cita").length).to.equal(1);
         chai.expect(el.citas[0]._procedimientos).to.include("Limpieza");
+        let filtros = buscar.firstCall.args[0];
+        chai.expect(filtros.tipoDocumento).to.equal("t1");
+        chai.expect(filtros.valorDocumento).to.equal("123");
+        chai.expect(filtros.idPersona).to.equal("p1");
+        chai.expect(filtros.idPersonaRol).to.equal("pr1");
+        chai.expect(filtros.idClinica).to.equal("c1");
     });
 
     test("buscar citas vacias deberia mostrar info", async function () {
         stubs.push(sinon.stub(ProcedimientoService.prototype, "findRange").resolves({ datos: [] }));
         stubs.push(sinon.stub(ConsultaService.prototype, "buscar").resolves({ datos: [] }));
         let el = crear(); await tick(10);
-        el.paciente = { idPersona: "p1" };
-        el.selector.root.querySelector("#tipo").value = "t1";
-        el.selector.root.querySelector("#valor").value = "123";
-        el.root.querySelector("#clinica").appendChild(new Option("C", "c1"));
+        identificar(el);
         el.desde.value = ""; el.hasta.value = "";
         el.buscarCitas();
         await tick(60);
@@ -100,10 +116,7 @@ suite("boundary/pagina-busqueda-citas", function () {
     test("error al buscar citas deberia mostrarse", async function () {
         stubs.push(sinon.stub(ConsultaService.prototype, "buscar").rejects(new Error("boom")));
         let el = crear(); await tick(10);
-        el.paciente = { idPersona: "p1" };
-        el.selector.root.querySelector("#tipo").value = "t1";
-        el.selector.root.querySelector("#valor").value = "123";
-        el.root.querySelector("#clinica").appendChild(new Option("C", "c1"));
+        identificar(el);
         el.buscarCitas();
         await tick(40);
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("boom");

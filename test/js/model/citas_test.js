@@ -1,7 +1,8 @@
 import * as chai from "../lib/chai/index.js";
 import {
     normalizar, nombreCompleto, nombreRol, nombreClinica, esPaciente, esEmpleado,
-    clinicasDePaciente, contextosDeEmpleado, documentosDePersona, buscarCitaPorTexto
+    asignacionPacienteEnClinica, clinicasDePaciente, contextosDeEmpleado,
+    documentosDePersona, buscarCitaPorTexto
 } from "../../../src/js/model/citas.js";
 mocha.setup("tdd");
 
@@ -48,6 +49,13 @@ suite("model/citas", function () {
         chai.expect(esEmpleado(null)).to.equal(false);
         chai.expect(esEmpleado({ rol: { nombre: "Doctor" } })).to.equal(false);
         chai.expect(esPaciente({ rol: { nombre: "  PACIENTE " } })).to.equal(true);
+    });
+
+    test("asignacionPacienteEnClinica deberia devolver solo el rol de paciente de esa clinica", function () {
+        let asignaciones = [asignacionEmpleado, asignacionPaciente];
+        chai.expect(asignacionPacienteEnClinica(asignaciones, "c-1")).to.equal(asignacionPaciente);
+        chai.expect(asignacionPacienteEnClinica(asignaciones, "c-otra")).to.equal(null);
+        chai.expect(asignacionPacienteEnClinica(null, "c-1")).to.equal(null);
     });
 
     test("clinicasDePaciente deberia quitar duplicados y ordenar", function () {
