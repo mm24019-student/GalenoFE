@@ -1,5 +1,5 @@
 import * as chai from "../lib/chai/index.js";
-import { asignacionPara, nuevoPaso, textoIndicaciones } from "../../../src/js/model/atencion.js";
+import { asignacionPara, consultaAtendible, esCompletado, idRolDePaso, nuevoPaso, pasoCorrespondeRol, textoIndicaciones } from "../../../src/js/model/atencion.js";
 mocha.setup("tdd");
 
 const clinica = { idClinica: "c-1" };
@@ -62,6 +62,32 @@ suite("model/atencion", function () {
         chai.expect(textoIndicaciones([])).to.equal("");
         chai.expect(textoIndicaciones(null)).to.equal("");
         chai.expect(textoIndicaciones([null, undefined, ""])).to.equal("");
+    });
+
+    test("esCompletado e idRolDePaso deberian usar estado y definicion", function () {
+        let completo = { estado: "Completado", idProcedimientoPaso: definicion };
+        chai.expect(esCompletado(completo)).to.equal(true);
+        chai.expect(esCompletado({ estado: "PENDIENTE" })).to.equal(false);
+        chai.expect(idRolDePaso(completo)).to.equal("r-odonto");
+        chai.expect(idRolDePaso({ idPersonaRol: { idRol: { idRol: "r-pasivo" } } })).to.equal("r-pasivo");
+    });
+
+    test("pasoCorrespondeRol deberia exigir el rol cuando se indica", function () {
+        let paso = { idProcedimientoPaso: definicion };
+        chai.expect(pasoCorrespondeRol(paso, "r-odonto")).to.equal(true);
+        chai.expect(pasoCorrespondeRol(paso, "r-enfermeria")).to.equal(false);
+        chai.expect(pasoCorrespondeRol(paso, null)).to.equal(true);
+        chai.expect(pasoCorrespondeRol(null, "r-odonto")).to.equal(false);
+    });
+
+    test("consultaAtendible deberia ocultar consultas sin pasos del rol o ya finalizadas", function () {
+        let pendiente = { idProcedimientoPaso: definicion, estado: "PENDIENTE" };
+        let completo = { idProcedimientoPaso: definicion, estado: "COMPLETADO" };
+        let procedimiento = { pasos: [pendiente], orden: [definicion] };
+        chai.expect(consultaAtendible([procedimiento], "r-odonto")).to.equal(true);
+        chai.expect(consultaAtendible([procedimiento], "r-enfermeria")).to.equal(false);
+        chai.expect(consultaAtendible([{ pasos: [completo], orden: [definicion] }], "r-odonto")).to.equal(false);
+        chai.expect(consultaAtendible([], "r-odonto")).to.equal(false);
     });
 });
 

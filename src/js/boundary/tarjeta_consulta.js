@@ -1,6 +1,7 @@
 import "./arbol_pasos.js";
 import { formatearFecha, formatearSoloFecha } from "../model/fechas.js";
 import { nombreClinica, nombreCompleto, nombreRol } from "../model/citas.js";
+import { consultaAtendible } from "../model/atencion.js";
 
 const plantilla = document.createElement("template");
 plantilla.innerHTML = `
@@ -38,6 +39,7 @@ class TarjetaConsulta extends HTMLElement {
         this.root.appendChild(plantilla.content.cloneNode(true));
         this._consulta = null;
         this._detalle = null;
+        this._idRol = null;
         this.root.querySelector("#atender").addEventListener("click", () => {
             if (this._consulta) {
                 this.dispatchEvent(new CustomEvent("atender", {
@@ -56,6 +58,11 @@ class TarjetaConsulta extends HTMLElement {
 
     set detalle(valor) {
         this._detalle = valor;
+        this.pintar();
+    }
+
+    set idRol(valor) {
+        this._idRol = valor || null;
         this.pintar();
     }
 
@@ -89,6 +96,9 @@ class TarjetaConsulta extends HTMLElement {
 
         let lista = this.root.querySelector("#listaProcedimientos");
         let procedimientos = this._detalle ? this._detalle.procedimientos : null;
+        let boton = this.root.querySelector("#atender");
+        boton.hidden = Array.isArray(procedimientos) && !consultaAtendible(procedimientos, this._idRol);
+        boton.disabled = boton.hidden;
         if (procedimientos === null || procedimientos === undefined) {
             let cargando = document.createElement("div");
             cargando.className = "vacio";

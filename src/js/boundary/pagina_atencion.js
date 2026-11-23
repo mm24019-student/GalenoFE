@@ -1,5 +1,7 @@
 import PaginaBase from "./pagina_base.js";
 import "./mensaje_panel.js";
+import "./panel_examenes.js";
+import "./motivo_devolucion.js";
 import { sesion } from "../control/sesion.js";
 import ConsultaService from "../control/consulta_service.js";
 import ConsultaProcedimientoService from "../control/consulta_procedimiento_service.js";
@@ -7,14 +9,10 @@ import ConsultaProcedimientoPasoService from "../control/consulta_procedimiento_
 import ProcedimientoService from "../control/procedimiento_service.js";
 import ProcedimientoPasoService from "../control/procedimiento_paso_service.js";
 import ProcedimientoPasoSecuenciaService from "../control/procedimiento_paso_secuencia_service.js";
-import ProcedimientoPasoExamenService from "../control/procedimiento_paso_examen_service.js";
-import OrdenExamenService from "../control/orden_examen_service.js";
-import ExamenResultadoService from "../control/examen_resultado_service.js";
 import { formatearFecha, formatearSoloFecha, ahoraISO } from "../model/fechas.js";
 import { nombreClinica, nombreCompleto, nombreRol } from "../model/citas.js";
-import { ordenarPasos, pasosOrdenados, indicePasoActual, idDePasoConsulta } from "../model/secuencia.js";
-import { asignacionPara, nuevoPaso, textoIndicaciones } from "../model/atencion.js";
-import { nuevoId } from "../model/ids.js";
+import { ordenarPasos, pasosOrdenados, idDePasoConsulta } from "../model/secuencia.js";
+import { esCompletado } from "../model/atencion.js";
 
 /**
  * Atención de una consulta. Permite registrar el seguimiento de un paso,
@@ -33,8 +31,8 @@ class PaginaAtencion extends PaginaBase {
         this.procedimientos = [];
         this.procedimientoActual = null;
         this.indiceActual = 0;
-        this.examenes = [];
-        this.seleccionExamenes = new Set();
+        this.panelExamenes = null;
+        this.motivo = null;
         this.idConsulta = null;
     }
 
@@ -82,19 +80,16 @@ class PaginaAtencion extends PaginaBase {
                             </select>
                         </div>
                     </div>
-                    <fieldset class="panel" id="panelExamenes" >
-                        <legend>Exámenes que pueden asignarse</legend>
-                        <div class="examenes" id="examenes"></div>
-                        <p class="nota" id="notaExamenes"></p>
-                    </fieldset>
+                    <panel-examenes id="panelExamenes"></panel-examenes>
                     <div class="acciones">
                         <button id="guardar" type="button" class="primario">Guardar atención</button>
-                        <button id="retroceder" type="button" class="secundario">← Paso anterior</button>
+                        <button id="retroceder" type="button" class="secundario">← Devolver paso</button>
                         <button id="avanzar" type="button" class="primario">Completar y avanzar →</button>
                         <button id="finalizar" type="button" class="secundario">Finalizar consulta</button>
                     </div>
                 </section>
             </div>
+            <motivo-devolucion id="motivo"></motivo-devolucion>
         `;
         return contenedor;
     }
@@ -102,6 +97,8 @@ class PaginaAtencion extends PaginaBase {
     conectado() {
         this.mensaje = this.q("#mensaje");
         this.contenido = this.q("#contenido");
+        this.panelExamenes = this.q("#panelExamenes");
+        this.motivo = this.q("#motivo");
         this.idConsulta = this.parametros.get("id");
         if (!sesion.activa) {
             this.mensaje.mostrar("error", "Debe iniciar sesión para atender una consulta.");
@@ -120,6 +117,7 @@ class PaginaAtencion extends PaginaBase {
         this.q("#retroceder").addEventListener("click", () => this.retroceder());
         this.q("#finalizar").addEventListener("click", () => this.finalizar());
         this.q("#estado").addEventListener("change", () => this.actualizarBotones());
+        this.motivo.addEventListener("motivo-confirmado", evento => this.devolverPaso(evento.detail.motivo));
         this.cargar();
     }
 
@@ -268,22 +266,22 @@ class PaginaAtencion extends PaginaBase {
         return pasosOrdenados(this.procedimientoActual.pasos, this.procedimientoActual.orden);
     }
 
+    pasosAtendibles() {
+        return this.pasosActuales().filter(paso => this.esPasoPropio(paso) && !esCompletado(paso));
+    }
+
     indicePasoInicial() {
-        let pasos = this.pasosActuales();
+        let pasos = this.pasosAtendibles();
         if (pasos.length === 0) {
-            return 0;
+            return -1;
         }
-        let propios = pasos
+        let pendientes = pasos
             .map((paso, indice) => ({ paso, indice }))
-            .filter(item => this.esPasoPropio(item.paso));
-        let pendientes = propios.filter(item => {
-            let estado = String(item.paso.estado || "PENDIENTE").toUpperCase();
-            return estado === "PENDIENTE" || estado === "EN_PROCESO";
-        });
-        if (pendientes.length > 0) {
-            return pendientes[0].indice;
-        }
-        return propios.length > 0 ? propios[0].indice : 0;
+            .filter(item => {
+                let estado = String(item.paso.estado || "PENDIENTE").toUpperCase();
+                return estado === "PENDIENTE" || estado === "EN_PROCESO";
+            });
+        return pendientes.length > 0 ? pendientes[0].indice : 0;
     }
 
     definicionDe(paso) {
@@ -309,30 +307,28 @@ class PaginaAtencion extends PaginaBase {
             return false;
         }
         let idRolPaso = this.idRolDePaso(paso);
-        return !idRolPaso || idRolPaso === idRolSesion;
+        return Boolean(idRolPaso) && idRolPaso === idRolSesion;
     }
 
     pintarPasos() {
         let lista = this.q("#pasos");
-        let pasos = this.pasosActuales();
+        let pasos = this.pasosAtendibles();
         if (pasos.length === 0) {
             let vacio = document.createElement("li");
             vacio.className = "meta";
-            vacio.textContent = "El procedimiento no tiene pasos registrados.";
+            vacio.textContent = this.pasosActuales().length === 0
+                ? "El procedimiento no tiene pasos registrados."
+                : "No hay pasos pendientes para su rol.";
             lista.replaceChildren(vacio);
             return;
         }
-        if (this.indiceActual >= pasos.length) {
-            this.indiceActual = pasos.length - 1;
+        if (this.indiceActual < 0 || this.indiceActual >= pasos.length) {
+            this.indiceActual = 0;
         }
         lista.replaceChildren(...pasos.map((paso, indice) => {
             let li = document.createElement("li");
             let boton = document.createElement("button");
             boton.type = "button";
-            boton.disabled = !this.esPasoPropio(paso);
-            if (boton.disabled) {
-                boton.title = "Este paso corresponde a otro rol";
-            }
             if (indice === this.indiceActual) {
                 boton.setAttribute("aria-current", "step");
             }
@@ -358,7 +354,7 @@ class PaginaAtencion extends PaginaBase {
     }
 
     pasoActual() {
-        return this.pasosActuales()[this.indiceActual] || null;
+        return this.pasosAtendibles()[this.indiceActual] || null;
     }
 
     pintarAtencion() {
@@ -372,140 +368,63 @@ class PaginaAtencion extends PaginaBase {
         let definicion = this.definicionDe(paso);
         let propio = this.esPasoPropio(paso);
         this.q("#tituloPaso").textContent = "Atención del paso: " + (definicion.nombre || "Paso");
-        let persona = paso.idPersonaRol && paso.idPersonaRol.idPersona
-            ? nombreCompleto(paso.idPersonaRol.idPersona) : "Sin responsable";
-        let rol = paso.idPersonaRol && paso.idPersonaRol.idRol
-            ? paso.idPersonaRol.idRol.nombre : "";
-        let rolDefinicion = definicion.idRol && definicion.idRol.nombre ? definicion.idRol.nombre : rol;
-        this.q("#metaPaso").textContent =
-            "Responsable: " + persona + (rol ? " (" + rol + ")" : "") + " · " + formatearFecha(paso.fechaInicio)
-            + (propio ? "" : " · Requiere rol: " + (rolDefinicion || "otro"));
+        this.q("#metaPaso").textContent = "Inicio: " + formatearFecha(paso.fechaInicio);
         this.q("#valor").value = paso.valor || "";
         this.q("#estado").value = String(paso.estado || "PENDIENTE").toUpperCase();
         this.q("#valor").disabled = !propio;
         this.q("#estado").disabled = !propio;
-        this.q("#panelExamenes").disabled = !propio;
         this.q("#guardar").disabled = !propio;
+        this.panelExamenes.definicion = definicion.idProcedimientoPaso || null;
+        this.panelExamenes.paso = paso;
+        this.panelExamenes.pasos = this.procedimientoActual ? this.procedimientoActual.pasos : [];
+        this.panelExamenes.editable = propio;
         if (propio) {
             this.q("#valor").focus();
         }
-        this.cargarExamenes(definicion.idProcedimientoPaso);
         this.actualizarBotones();
-    }
-
-    cargarExamenes(idDefinicion) {
-        let contenedor = this.q("#examenes");
-        let nota = this.q("#notaExamenes");
-        this.examenes = [];
-        this.seleccionExamenes.clear();
-        contenedor.replaceChildren();
-        nota.textContent = "Cargando exámenes disponibles…";
-        if (!idDefinicion) {
-            nota.textContent = "El paso no tiene definición de exámenes.";
-            return;
-        }
-        new ProcedimientoPasoExamenService().porProcedimientoPaso(idDefinicion).then(resp => {
-            this.examenes = (resp.datos || [])
-                .filter(link => link.activo !== false && link.idExamen)
-                .map(link => ({
-                    idExamen: link.idExamen.idExamen,
-                    nombre: link.idExamen.nombre || "Examen",
-                    observaciones: link.observaciones || ""
-                }));
-            if (this.examenes.length === 0) {
-                nota.textContent = "Este paso no tiene exámenes configurados.";
-                return;
-            }
-            nota.textContent = "Marque los exámenes que se administraron en esta atención.";
-            contenedor.replaceChildren(...this.examenes.map(examen => {
-                let etiqueta = document.createElement("label");
-                etiqueta.className = "examen";
-                let check = document.createElement("input");
-                check.type = "checkbox";
-                check.value = examen.idExamen;
-                check.addEventListener("change", () => {
-                    if (check.checked) {
-                        this.seleccionExamenes.add(examen.idExamen);
-                    } else {
-                        this.seleccionExamenes.delete(examen.idExamen);
-                    }
-                });
-                let texto = document.createElement("span");
-                texto.textContent = examen.nombre;
-                etiqueta.append(check, texto);
-                return etiqueta;
-            }));
-        }).catch(() => {
-            nota.textContent = "No se pudieron cargar los exámenes de este paso.";
-        });
     }
 
     guardar(avanzar) {
         let paso = this.pasoActual();
         if (!paso) {
-            return;
+            return Promise.resolve();
         }
         if (!this.esPasoPropio(paso)) {
             this.mensaje.mostrar("error", "Este paso corresponde a otro rol.");
-            return;
+            return Promise.resolve();
         }
         let valor = this.q("#valor").value.trim();
         let estado = this.q("#estado").value;
-        if (avanzar) {
-            estado = "COMPLETADO";
-        }
         if (!valor) {
             this.mensaje.mostrar("error", "Documente la atención antes de guardar.");
             this.q("#valor").focus();
-            return;
+            return Promise.resolve();
         }
         let actualizado = Object.assign({}, paso, { valor: valor, estado: estado });
         if (estado === "COMPLETADO") {
             actualizado.fechaFin = paso.fechaFin || ahoraISO();
         }
+        let servicio = new ConsultaProcedimientoPasoService();
         this.mensaje.mostrar("cargando", "Guardando la atención…");
-        new ConsultaProcedimientoPasoService().update(paso.idConsultaProcedimientoPaso, actualizado)
-            .then(() => this.registrarExamenes(paso))
-            .then(() => this.recargarPasos(paso.idConsultaProcedimientoPaso))
+        return servicio.update(paso.idConsultaProcedimientoPaso, actualizado)
+            .then(() => this.panelExamenes.guardar(paso))
             .then(() => {
-                this.mensaje.mostrar("exito", "Atención guardada correctamente.");
                 if (avanzar) {
-                    this.avanzar();
+                    return this.avanzar();
                 }
+                return true;
+            })
+            .then(continuar => {
+                if (!continuar) {
+                    return;
+                }
+                return this.recargarPasos(paso.idConsultaProcedimientoPaso).then(() => {
+                    this.mensaje.mostrar("exito", "Atención guardada correctamente.");
+                });
             })
             .catch(error => {
                 this.mensaje.mostrar("error", error.message || "No se pudo guardar la atención.");
             });
-    }
-
-    registrarExamenes(paso) {
-        let seleccionados = this.examenes.filter(e => this.seleccionExamenes.has(e.idExamen));
-        if (seleccionados.length === 0) {
-            return Promise.resolve();
-        }
-        let idOrden = nuevoId();
-        let orden = {
-            idOrdenExamen: idOrden,
-            fechaCreacion: ahoraISO(),
-            indicaciones: textoIndicaciones(seleccionados.map(e => e.nombre)),
-            idConsultaProcedimientoPaso: {
-                idConsultaProcedimientoPaso: paso.idConsultaProcedimientoPaso
-            }
-        };
-        let ordenService = new OrdenExamenService();
-        let resultadoService = new ExamenResultadoService();
-        return ordenService.create(orden).then(() => {
-            return Promise.all(seleccionados.map(examen => resultadoService.create({
-                idExamenResultado: nuevoId(),
-                fechaCreacion: ahoraISO(),
-                resultado: examen.nombre,
-                interpretacion: "Examen administrado durante la atención",
-                rutaAtestado: "pendiente",
-                idOrdenExamen: { idOrdenExamen: idOrden }
-            })));
-        }).then(() => {
-            this.seleccionExamenes.clear();
-        });
     }
 
     recargarPasos(idPasoSeleccionado) {
@@ -516,9 +435,9 @@ class PaginaAtencion extends PaginaBase {
                 return;
             }
             this.procedimientoActual = procedimiento;
-            let pasos = pasosOrdenados(procedimiento.pasos, procedimiento.orden);
-            let indice = pasos.findIndex(p => p.idConsultaProcedimientoPaso === idPasoSeleccionado);
-            this.indiceActual = indice >= 0 ? indice : indicePasoActual(procedimiento.pasos, procedimiento.orden);
+            let indice = this.pasosAtendibles()
+                .findIndex(p => p.idConsultaProcedimientoPaso === idPasoSeleccionado);
+            this.indiceActual = indice >= 0 ? indice : this.indicePasoInicial();
             this.pintarPasos();
             this.pintarAtencion();
         });
@@ -528,56 +447,25 @@ class PaginaAtencion extends PaginaBase {
         let procedimiento = this.procedimientoActual;
         let actual = this.pasoActual();
         if (!procedimiento || !actual) {
-            return;
+            return Promise.resolve(false);
         }
         if (!this.esPasoPropio(actual)) {
             this.mensaje.mostrar("error", "Este paso corresponde a otro rol.");
-            return;
+            return Promise.resolve(false);
         }
         let definiciones = procedimiento.orden || [];
-        let idActual = idDePasoConsulta(actual);
-        let posicion = definiciones.findIndex(d => d.idProcedimientoPaso === idActual);
+        let posicion = definiciones.findIndex(d => d.idProcedimientoPaso === idDePasoConsulta(actual));
         if (posicion < 0 || posicion >= definiciones.length - 1) {
             this.mensaje.mostrar("info", "Este ya es el último paso del procedimiento.");
-            return;
+            return Promise.resolve(false);
         }
-        let siguiente = definiciones[posicion + 1];
-        let existente = pasosOrdenados(procedimiento.pasos, definiciones)
-            .find(p => idDePasoConsulta(p) === siguiente.idProcedimientoPaso);
-        if (existente) {
-            let pasos = pasosOrdenados(procedimiento.pasos, definiciones);
-            this.indiceActual = pasos.indexOf(existente);
-            this.pintarPasos();
-            this.pintarAtencion();
-            return;
-        }
-        let asignacion = asignacionPara(siguiente, sesion.asignaciones, sesion.clinica);
-        let idRolSiguiente = siguiente.idRol ? siguiente.idRol.idRol : null;
-        let asignacionCorrecta = asignacion && asignacion.rol
-            && asignacion.rol.idRol === idRolSiguiente ? asignacion : null;
-        let nuevo = nuevoPaso({
-            idConsultaProcedimiento: procedimiento.id,
-            definicion: siguiente,
-            asignacion: asignacionCorrecta
-        });
-        this.mensaje.mostrar("cargando", "Creando el siguiente paso…");
-        new ConsultaProcedimientoPasoService().create(nuevo).then(() => {
-            this.mensaje.mostrar("exito", "Siguiente paso creado. Puede continuar la atención.");
-            return this.cargarProcedimientos(true);
-        }).then(() => {
-            let p = this.procedimientos.find(x => x.id === procedimiento.id);
-            if (!p) {
-                return;
-            }
-            this.procedimientoActual = p;
-            let pasos = pasosOrdenados(p.pasos, p.orden);
-            let indice = pasos.findIndex(x => idDePasoConsulta(x) === siguiente.idProcedimientoPaso);
-            this.indiceActual = indice >= 0 ? indice : pasos.length - 1;
-            this.pintarPasos();
-            this.pintarAtencion();
-        }).catch(error => {
-            this.mensaje.mostrar("error", error.message || "No se pudo crear el siguiente paso.");
-        });
+        this.mensaje.mostrar("cargando", "Avanzando al siguiente paso…");
+        return new ConsultaProcedimientoPasoService().avanzar(actual.idConsultaProcedimientoPaso)
+            .then(() => true)
+            .catch(error => {
+                this.mensaje.mostrar("error", error.message || "No se pudo avanzar de paso.");
+                return false;
+            });
     }
 
     retroceder() {
@@ -592,16 +480,44 @@ class PaginaAtencion extends PaginaBase {
             this.mensaje.mostrar("info", "Este ya es el primer paso del procedimiento.");
             return;
         }
-        let anterior = definiciones[posicion - 1];
-        let pasos = pasosOrdenados(procedimiento.pasos, definiciones);
-        let indice = pasos.findIndex(p => idDePasoConsulta(p) === anterior.idProcedimientoPaso);
-        if (indice < 0) {
-            this.mensaje.mostrar("info", "El paso anterior todavía no ha sido creado.");
-            return;
+        this.motivo.abrir(actual);
+    }
+
+    devolverPaso(motivo) {
+        let paso = this.pasoActual();
+        if (!paso || !motivo) {
+            return Promise.resolve();
         }
-        this.indiceActual = indice;
-        this.pintarPasos();
-        this.pintarAtencion();
+        let nombrePaso = paso.idProcedimientoPaso && paso.idProcedimientoPaso.nombre
+            ? paso.idProcedimientoPaso.nombre : "Paso";
+        let aviso = "Devolución desde " + nombrePaso + ": " + motivo;
+        let valor = [String(paso.valor || "").trim(), aviso].filter(Boolean).join("\n");
+        let servicio = new ConsultaProcedimientoPasoService();
+        this.mensaje.mostrar("cargando", "Devolviendo el paso…");
+        return servicio.update(paso.idConsultaProcedimientoPaso, Object.assign({}, paso, { valor: valor }))
+            .then(() => servicio.retroceder(paso.idConsultaProcedimientoPaso))
+            .then(respuesta => this.registrarMotivoEnAnterior(servicio, respuesta.datos, aviso))
+            .then(() => this.recargarPasos(paso.idConsultaProcedimientoPaso))
+            .then(() => {
+                this.mensaje.mostrar("exito", "Paso devuelto con el motivo registrado.");
+            })
+            .catch(error => {
+                this.mensaje.mostrar("error", error.message || "No se pudo devolver el paso.");
+            });
+    }
+
+    registrarMotivoEnAnterior(servicio, anterior, aviso) {
+        if (!anterior || !anterior.idConsultaProcedimientoPaso) {
+            return Promise.resolve();
+        }
+        return servicio.findById(anterior.idConsultaProcedimientoPaso).then(respuesta => {
+            let paso = respuesta.datos;
+            if (!paso) {
+                return;
+            }
+            let valor = [String(paso.valor || "").trim(), aviso].filter(Boolean).join("\n");
+            return servicio.update(paso.idConsultaProcedimientoPaso, Object.assign({}, paso, { valor: valor }));
+        });
     }
 
     agregarProcedimiento() {
@@ -636,15 +552,54 @@ class PaginaAtencion extends PaginaBase {
         let propio = paso ? this.esPasoPropio(paso) : false;
         let haySiguiente = posicion >= 0 && posicion < definiciones.length - 1;
         let esUltimo = definiciones.length > 0 && posicion === definiciones.length - 1;
+        this.q("#retroceder").disabled = !propio || posicion <= 0;
         this.q("#avanzar").disabled = !propio || !completado || !haySiguiente;
         this.q("#finalizar").disabled = !propio || !completado || !esUltimo;
     }
 
     finalizar() {
         if (this.q("#finalizar").disabled) {
-            return;
+            return Promise.resolve();
         }
-        location.hash = "#/dashboard";
+        let paso = this.pasoActual();
+        let procedimiento = this.procedimientoActual;
+        if (!paso || !procedimiento) {
+            return Promise.resolve();
+        }
+        let valor = this.q("#valor").value.trim();
+        if (!valor) {
+            this.mensaje.mostrar("error", "Documente la atención antes de finalizar.");
+            this.q("#valor").focus();
+            return Promise.resolve();
+        }
+        let fin = ahoraISO();
+        let pasoService = new ConsultaProcedimientoPasoService();
+        let procedimientoService = new ConsultaProcedimientoService();
+        let actualizado = Object.assign({}, paso, {
+            valor: valor,
+            estado: "COMPLETADO",
+            fechaFin: paso.fechaFin || fin
+        });
+        this.mensaje.mostrar("cargando", "Finalizando el procedimiento…");
+        return pasoService.update(paso.idConsultaProcedimientoPaso, actualizado)
+            .then(() => this.panelExamenes.guardar(paso))
+            .then(() => procedimientoService.findById(procedimiento.id))
+            .then(respuesta => {
+                let entidad = respuesta.datos || {};
+                let completa = Object.assign({}, entidad, {
+                    idConsultaProcedimiento: procedimiento.id,
+                    observaciones: entidad.observaciones || "Procedimiento finalizado",
+                    fechaFin: fin
+                });
+                return procedimientoService.update(procedimiento.id, completa);
+            })
+            .then(() => {
+                this.mensaje.mostrar("exito", "Procedimiento finalizado correctamente.");
+                location.hash = "#/dashboard";
+            })
+            .catch(error => {
+                this.mensaje.mostrar("error", error.message || "No se pudo finalizar el procedimiento.");
+            });
     }
 }
 customElements.define("pagina-atencion", PaginaAtencion);

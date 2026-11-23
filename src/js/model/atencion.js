@@ -45,3 +45,52 @@ export function textoIndicaciones(nombres) {
     let lista = (nombres || []).filter(Boolean);
     return lista.length === 0 ? "" : "Exámenes administrados: " + lista.join(", ");
 }
+
+export function esCompletado(paso) {
+    return String((paso && paso.estado) || "").toUpperCase() === "COMPLETADO";
+}
+
+export function idRolDePaso(paso) {
+    let definicion = paso && paso.idProcedimientoPaso;
+    if (definicion && definicion.idRol) {
+        return definicion.idRol.idRol || null;
+    }
+    if (paso && paso.idPersonaRol && paso.idPersonaRol.idRol) {
+        return paso.idPersonaRol.idRol.idRol || null;
+    }
+    return null;
+}
+
+export function pasoCorrespondeRol(paso, idRol) {
+    if (!paso) {
+        return false;
+    }
+    let rol = idRolDePaso(paso);
+    if (!idRol) {
+        return true;
+    }
+    return rol === idRol;
+}
+
+export function consultaAtendible(procedimientos, idRol) {
+    return (procedimientos || []).some(procedimiento => {
+        if (!procedimiento) {
+            return false;
+        }
+        let pasos = (procedimiento.pasos || []).filter(Boolean);
+        let pendientes = pasos.filter(paso => !esCompletado(paso) && pasoCorrespondeRol(paso, idRol));
+        if (pendientes.length === 0) {
+            return false;
+        }
+        let definiciones = procedimiento.orden || [];
+        let finales = definiciones.filter(definicion => definicion && definicion.indicaFin === true);
+        if (finales.length === 0 && definiciones.length > 0) {
+            finales = [definiciones[definiciones.length - 1]];
+        }
+        let finalCompletado = finales.some(definicion => pasos.some(paso => {
+            let id = paso.idProcedimientoPaso ? paso.idProcedimientoPaso.idProcedimientoPaso : null;
+            return id === definicion.idProcedimientoPaso && esCompletado(paso);
+        }));
+        return !finalCompletado;
+    });
+}

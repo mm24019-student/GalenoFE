@@ -1,5 +1,4 @@
 import { formatearFecha } from "../model/fechas.js";
-import { nombreCompleto } from "../model/citas.js";
 import { pasosOrdenados } from "../model/secuencia.js";
 
 const plantilla = document.createElement("template");
@@ -65,11 +64,7 @@ class ArbolPasos extends HTMLElement {
 
         let meta = document.createElement("div");
         meta.className = "meta";
-        let persona = paso.idPersonaRol && paso.idPersonaRol.idPersona
-            ? nombreCompleto(paso.idPersonaRol.idPersona) : "Sin responsable";
-        let rol = paso.idPersonaRol && paso.idPersonaRol.idRol
-            ? paso.idPersonaRol.idRol.nombre : "";
-        meta.textContent = persona + (rol ? " (" + rol + ")" : "") + " · " + formatearFecha(paso.fechaInicio);
+        meta.textContent = formatearFecha(paso.fechaInicio);
 
         let detalles = document.createElement("details");
         let resumen = document.createElement("summary");

@@ -30,6 +30,7 @@ suite("boundary/arbol-pasos", function () {
         el.pasos = [{ idConsultaProcedimientoPaso: "c1", estado: "PENDIENTE", idProcedimientoPaso: { idProcedimientoPaso: "p1", nombre: "Paso 1" }, fechaInicio: null, valor: "" }];
         chai.expect(el.root.querySelectorAll("li").length).to.equal(1);
         chai.expect(el.root.querySelector(".nombre").textContent).to.include("Paso 1");
+        chai.expect(el.root.textContent).to.not.include("Responsable");
     });
 });
 

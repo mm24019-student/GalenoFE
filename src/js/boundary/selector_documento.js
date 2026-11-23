@@ -35,6 +35,7 @@ class SelectorDocumento extends HTMLElement {
         this.root.appendChild(plantilla.content.cloneNode(true));
         this.cargado = false;
         this.estado = "inicial";
+        this._bloqueado = false;
     }
 
     connectedCallback() {
@@ -78,7 +79,25 @@ class SelectorDocumento extends HTMLElement {
         return this.q("#valor").value;
     }
 
+    get bloqueado() {
+        return this._bloqueado;
+    }
+
+    set bloqueado(valor) {
+        this._bloqueado = Boolean(valor);
+        this.aplicarBloqueo();
+    }
+
+    aplicarBloqueo() {
+        this.q("#tipo").disabled = this._bloqueado;
+        this.q("#valor").disabled = this._bloqueado;
+        this.q("#buscar").disabled = this._bloqueado;
+    }
+
     buscar() {
+        if (this._bloqueado) {
+            return;
+        }
         if (!this.tipo) {
             this.dispatchEvent(new CustomEvent("error", {
                 detail: new Error("Seleccione el tipo de documento.")
@@ -101,7 +120,7 @@ class SelectorDocumento extends HTMLElement {
 
     ocupado(valor) {
         let boton = this.q("#buscar");
-        boton.disabled = Boolean(valor);
+        boton.disabled = Boolean(valor) || this._bloqueado;
         boton.textContent = valor ? "Buscando…" : "Buscar";
     }
 

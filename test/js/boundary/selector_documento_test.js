@@ -73,6 +73,23 @@ suite("boundary/selector-documento", function () {
         chai.expect(el.root.querySelector("#buscar").disabled).to.equal(false);
     });
 
+    test("bloqueado deberia impedir una nueva busqueda", async function () {
+        let el = document.createElement("selector-documento");
+        document.body.appendChild(el);
+        await tick(10);
+        let buscado = false;
+        el.addEventListener("documento-buscado", () => { buscado = true; });
+        el.root.querySelector("#tipo").value = "t1";
+        el.root.querySelector("#valor").value = "12345";
+        el.bloqueado = true;
+        chai.expect(el.root.querySelector("#buscar").disabled).to.equal(true);
+        el.root.querySelector("#buscar").click();
+        chai.expect(buscado).to.equal(false);
+        el.bloqueado = false;
+        el.root.querySelector("#buscar").click();
+        chai.expect(buscado).to.equal(true);
+    });
+
     test("enter en valor deberia disparar busqueda", async function () {
         let el = document.createElement("selector-documento");
         document.body.appendChild(el);

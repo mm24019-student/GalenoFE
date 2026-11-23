@@ -55,6 +55,10 @@ export class Sesion extends EventTarget {
         return this.datos ? this.datos.rol : null;
     }
 
+    get bloqueado() {
+        return Boolean(this.datos && this.datos.bloqueado);
+    }
+
     /**
      * @param usuario      la persona que se identifico
      * @param asignaciones lista de { clinica, rol } donde esta registrado como empleado
@@ -68,8 +72,24 @@ export class Sesion extends EventTarget {
         if (!this.activa) {
             throw new Error("No hay una sesion iniciada");
         }
+        if (this.bloqueado) {
+            throw new Error("El rol de atención ya fue confirmado");
+        }
         this.datos.clinica = clinica;
         this.datos.rol = rol;
+        this.guardar();
+    }
+
+    confirmarContexto(clinica, rol) {
+        if (!this.activa) {
+            throw new Error("No hay una sesion iniciada");
+        }
+        if (this.bloqueado) {
+            return;
+        }
+        this.datos.clinica = clinica;
+        this.datos.rol = rol;
+        this.datos.bloqueado = true;
         this.guardar();
     }
 

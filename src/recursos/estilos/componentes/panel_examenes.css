@@ -1,0 +1,35 @@
+@import "../compartido/base_componentes.css";
+
+:host { display: block; }
+
+.panel-examenes {
+    display: grid;
+    gap: var(--espacio-3);
+}
+.fila-examen {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) repeat(2, minmax(120px, 1fr));
+    gap: var(--espacio-2);
+    align-items: center;
+    padding: var(--espacio-2) 0;
+    border-bottom: 1px solid var(--color-borde);
+}
+.fila-examen label { font-weight: 700; }
+.fila-examen input[type="text"] { width: 100%; }
+.nota { color: var(--color-texto-suave); }
+.historial {
+    display: grid;
+    gap: var(--espacio-2);
+}
+.resultado {
+    padding: var(--espacio-2);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    background: var(--color-superficie);
+}
+.resultado strong { display: block; }
+.resultado span { display: block; }
+
+@media (max-width: 760px) {
+    .fila-examen { grid-template-columns: 1fr; }
+}

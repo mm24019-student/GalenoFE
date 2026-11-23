@@ -47,6 +47,7 @@ class PaginaLogin extends PaginaBase {
 
     error(mensaje) {
         this.mensaje.mostrar("error", mensaje instanceof Error ? mensaje.message : String(mensaje));
+        this.selector.bloqueado = false;
         this.selector.listo();
     }
 
@@ -58,10 +59,12 @@ class PaginaLogin extends PaginaBase {
             this.selector.listo();
             if (this.asignaciones.length === 0) {
                 this.resultado.hidden = true;
+                this.selector.bloqueado = false;
                 this.mensaje.mostrar("error",
                     "La persona no tiene un rol de empleado asignado en ninguna clínica.");
                 return;
             }
+            this.selector.bloqueado = true;
             this.pintarResultado();
             this.mensaje.mostrar("exito", "Identidad validada. Revise sus roles y confirme el ingreso.");
         }).catch(error => {

@@ -43,6 +43,7 @@ suite("boundary/pagina-login", function () {
         await tick(30);
         chai.expect(el.resultado.hidden).to.equal(true);
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("empleado");
+        chai.expect(el.selector.bloqueado).to.equal(false);
         chai.expect(sesion.activa).to.equal(false);
     });
 
@@ -58,6 +59,8 @@ suite("boundary/pagina-login", function () {
         chai.expect(el.resultado.hidden).to.equal(false);
         chai.expect(el.resultado.textContent).to.include("Doctor");
         chai.expect(el.resultado.textContent).to.include("Central");
+        chai.expect(el.selector.bloqueado).to.equal(true);
+        chai.expect(el.selector.root.querySelector("#buscar").disabled).to.equal(true);
         el.root.querySelector("button.entrar").click();
         chai.expect(sesion.activa).to.equal(true);
         chai.expect(sesion.usuario.idPersona).to.equal("p1");
@@ -72,6 +75,7 @@ suite("boundary/pagina-login", function () {
         await tick(30);
         chai.expect(el.resultado.hidden).to.equal(true);
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("caida");
+        chai.expect(el.selector.bloqueado).to.equal(false);
     });
 
     test("documento no encontrado deberia informar error", async function () {

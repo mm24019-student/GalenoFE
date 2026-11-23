@@ -1,0 +1,23 @@
+@import "../compartido/base_componentes.css";
+
+:host { display: block; }
+
+.contexto {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) auto;
+    gap: var(--espacio-3);
+    align-items: end;
+    padding: var(--espacio-4);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    background: var(--color-superficie);
+    box-shadow: var(--sombra);
+}
+label { display: block; font-weight: 700; margin-bottom: var(--espacio-1); }
+button { min-height: 2.6rem; }
+:host([bloqueado]) .contexto { opacity: 0.75; }
+
+@media (max-width: 640px) {
+    .contexto { grid-template-columns: 1fr; }
+    button { width: 100%; }
+}

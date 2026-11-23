@@ -1,5 +1,6 @@
 import PaginaBase from "./pagina_base.js";
 import "./mensaje_panel.js";
+import "./selector_contexto.js";
 import "./tarjeta_consulta.js";
 import { sesion } from "../control/sesion.js";
 import ConsultaService from "../control/consulta_service.js";
@@ -43,19 +44,7 @@ class PaginaDashboard extends PaginaBase {
                 </div>
             </section>
             <mensaje-panel id="mensaje" oculto></mensaje-panel>
-            <section class="contexto" id="contexto">
-                <div>
-                    <label for="clinica">Clínica</label>
-                    <select id="clinica"></select>
-                </div>
-                <div>
-                    <label for="rol">Rol</label>
-                    <select id="rol"></select>
-                </div>
-                <div class="acciones">
-                    <button id="trabajar" type="button">Trabajar con este rol</button>
-                </div>
-            </section>
+            <selector-contexto id="contexto"></selector-contexto>
             <section id="consultas" hidden>
                 <div class="fechas">
                     <div>
@@ -99,8 +88,12 @@ class PaginaDashboard extends PaginaBase {
             return;
         }
         this.pintarContextos();
-        this.q("#clinica").addEventListener("change", () => this.pintarRoles());
-        this.q("#trabajar").addEventListener("click", () => this.elegirContexto());
+        this.contexto.addEventListener("contexto-confirmado", evento => {
+            this.elegirContexto(evento.detail.contexto);
+        });
+        this.contexto.addEventListener("error", evento => {
+            this.mensaje.mostrar("error", evento.detail.message || "Seleccione un contexto válido.");
+        });
         this.q("#buscar").addEventListener("click", () => this.buscarConsultas());
         this.q("#cuadricula").addEventListener("atender", evento => {
             let id = evento.detail.consulta.idConsulta;
@@ -108,56 +101,43 @@ class PaginaDashboard extends PaginaBase {
         });
 
         if (sesion.clinica && sesion.rol) {
-            this.q("#clinica").value = sesion.clinica.idClinica;
-            this.pintarRoles();
-            this.q("#rol").value = sesion.rol.idRol;
+            this.contexto.seleccionActual = sesion;
+            this.contexto.bloqueado = sesion.bloqueado;
             this.consultas.hidden = false;
+            if (sesion.bloqueado) {
+                this.buscarConsultas();
+            }
         }
         this.cargarCatalogo();
     }
 
     pintarContextos() {
-        let clinicas = new Map();
-        this.contextos.forEach(c => clinicas.set(c.clinica.idClinica, c.clinica));
-        this.q("#clinica").replaceChildren(...Array.from(clinicas.values()).map(clinica => {
-            let opcion = document.createElement("option");
-            opcion.value = clinica.idClinica;
-            opcion.textContent = clinica.nombre;
-            return opcion;
-        }));
-        if (sesion.clinica) {
-            this.q("#clinica").value = sesion.clinica.idClinica;
+        this.contexto.contextos = this.contextos;
+        if (sesion.clinica || sesion.rol) {
+            this.contexto.seleccionActual = sesion;
         }
-        this.pintarRoles();
     }
 
     pintarRoles() {
-        let idClinica = this.q("#clinica").value;
-        let roles = this.contextos.filter(c => c.clinica.idClinica === idClinica);
-        this.q("#rol").replaceChildren(...roles.map(contexto => {
-            let opcion = document.createElement("option");
-            opcion.value = contexto.rol.idRol;
-            opcion.textContent = contexto.rol.nombre;
-            return opcion;
-        }));
-        if (sesion.rol && roles.some(c => c.rol.idRol === sesion.rol.idRol)) {
-            this.q("#rol").value = sesion.rol.idRol;
-        }
+        this.pintarContextos();
     }
 
-    elegirContexto() {
-        let idClinica = this.q("#clinica").value;
-        let idRol = this.q("#rol").value;
-        let contexto = this.contextos.find(c =>
-            c.clinica.idClinica === idClinica && c.rol.idRol === idRol);
-        if (!contexto) {
+    elegirContexto(contexto) {
+        let elegido = contexto || this.contexto.seleccion;
+        if (!elegido) {
             this.mensaje.mostrar("error", "Seleccione una clínica y un rol válidos.");
             return;
         }
-        sesion.elegirContexto(contexto.clinica, contexto.rol);
+        if (sesion.bloqueado) {
+            this.mensaje.mostrar("info", "El rol de atención ya está confirmado.");
+            this.consultas.hidden = false;
+            return;
+        }
+        sesion.confirmarContexto(elegido.clinica, elegido.rol);
+        this.contexto.bloqueado = true;
         this.consultas.hidden = false;
         this.mensaje.mostrar("exito",
-            "Trabajando como " + contexto.rol.nombre + " en " + contexto.clinica.nombre + ".");
+            "Trabajando como " + elegido.rol.nombre + " en " + elegido.clinica.nombre + ".");
         this.buscarConsultas();
     }
 
@@ -212,6 +192,7 @@ class PaginaDashboard extends PaginaBase {
         }
         let tarjetas = this.citas.map(cita => {
             let tarjeta = document.createElement("tarjeta-consulta");
+            tarjeta.idRol = sesion.rol ? sesion.rol.idRol : null;
             tarjeta.consulta = cita;
             tarjeta.detalle = null;
             this.cargarDetalle(cita, tarjeta);

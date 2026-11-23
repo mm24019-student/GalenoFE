@@ -42,33 +42,36 @@ suite("boundary/pagina-dashboard", function () {
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("empleado");
     });
 
-    test("deberia listar contextos y elegir clinica/rol", async function () {
+    test("deberia listar contextos, confirmar rol y quedar bloqueado", async function () {
         sesion.iniciar({ idPersona: "p1", nombres: "Ana" }, [asigEmpleado]);
         stubs.push(sinon.stub(ConsultaService.prototype, "buscar").resolves({ datos: [] }));
         let el = crear(); await tick(20);
-        chai.expect(el.q("#clinica").options.length).to.equal(1);
-        chai.expect(el.q("#rol").options.length).to.equal(1);
-        el.elegirContexto();
+        chai.expect(el.contexto.root.querySelectorAll("#clinica option").length).to.equal(1);
+        chai.expect(el.contexto.root.querySelectorAll("#rol option").length).to.equal(1);
+        el.elegirContexto(el.contexto.seleccion);
         await tick(40);
         chai.expect(sesion.clinica.idClinica).to.equal("c1");
         chai.expect(sesion.rol.idRol).to.equal("r1");
+        chai.expect(sesion.bloqueado).to.equal(true);
+        chai.expect(el.contexto.bloqueado).to.equal(true);
+        chai.expect(el.contexto.root.querySelector("#trabajar").disabled).to.equal(true);
         chai.expect(el.consultas.hidden).to.equal(false);
     });
 
     test("buscar consultas sin contexto deberia dar error", async function () {
         sesion.iniciar({ idPersona: "p1", nombres: "Ana" }, [asigEmpleado]);
         let el = crear(); await tick(20);
-        sesion.cerrar(); // fuerza sin contexto
+        sesion.cerrar();
         sesion.iniciar({ idPersona: "p1", nombres: "Ana" }, [asigEmpleado]);
         el.buscarConsultas();
-        // sesion.clinica es null hasta elegir
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.satisfy(t => t.includes("clínica") || t.includes("rol") || t.includes("Primero"));
     });
 
     test("rango de fechas invalido en dashboard deberia mostrar error", async function () {
         sesion.iniciar({ idPersona: "p1", nombres: "Ana" }, [asigEmpleado]);
+        stubs.push(sinon.stub(ConsultaService.prototype, "buscar").resolves({ datos: [] }));
         let el = crear(); await tick(20);
-        el.elegirContexto(); await tick(20);
+        el.elegirContexto(el.contexto.seleccion); await tick(20);
         el.q("#desde").value = "2026-05-05";
         el.q("#hasta").value = "2026-01-01";
         el.buscarConsultas();
@@ -83,7 +86,7 @@ suite("boundary/pagina-dashboard", function () {
         stubs.push(sinon.stub(ProcedimientoPasoService.prototype, "porProcedimiento").resolves({ datos: [] }));
         stubs.push(sinon.stub(ProcedimientoPasoSecuenciaService.prototype, "porProcedimiento").resolves({ datos: [] }));
         let el = crear(); await tick(20);
-        el.elegirContexto(); await tick(60);
+        el.elegirContexto(el.contexto.seleccion); await tick(60);
         let filtros = ConsultaService.prototype.buscar.firstCall.args[0];
         chai.expect(filtros.idClinica).to.equal("c1");
         chai.expect(filtros.idRol).to.equal("r1");
@@ -95,7 +98,7 @@ suite("boundary/pagina-dashboard", function () {
         sesion.iniciar({ idPersona: "p1", nombres: "Ana" }, [asigEmpleado]);
         stubs.push(sinon.stub(ConsultaService.prototype, "buscar").rejects(new Error("fallo dash")));
         let el = crear(); await tick(20);
-        el.elegirContexto(); await tick(40);
+        el.elegirContexto(el.contexto.seleccion); await tick(40);
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("fallo");
     });
 });
