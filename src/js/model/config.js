@@ -6,7 +6,7 @@
 export const MENSAJE_ESTADO_BACKEND = "galeno-estado-backend";
 export const MENSAJE_CONFIGURAR_API = "galeno-configurar-api";
 
-const API_POR_DEFECTO = "http://localhost:9080/GalenoSV-1.0-SNAPSHOT/resources/";
+const API_POR_DEFECTO = "http://galeno.backend:9080/galeno/resources/";
 
 function normalizar(url) {
     return String(url).trim().replace(/\/+$/, "") + "/";
