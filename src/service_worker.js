@@ -1,6 +1,7 @@
 import { URL_API, MENSAJE_ESTADO_BACKEND, MENSAJE_CONFIGURAR_API } from "./js/model/config.js";
 
 const CACHE = "galeno-fe-v25";
+const CACHE_API = "galeno-api-v1";
 let urlApi = URL_API;
 
 self.addEventListener("message", evento => {
