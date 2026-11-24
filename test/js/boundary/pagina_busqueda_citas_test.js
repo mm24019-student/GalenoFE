@@ -6,6 +6,7 @@ import PersonaRolService from "../../../src/js/control/persona_rol_service.js";
 import ConsultaService from "../../../src/js/control/consulta_service.js";
 import ConsultaProcedimientoService from "../../../src/js/control/consulta_procedimiento_service.js";
 import ProcedimientoService from "../../../src/js/control/procedimiento_service.js";
+import "../../../src/js/boundary/aviso_instalar_app.js";
 import "../../../src/js/boundary/pagina_busqueda_citas.js";
 mocha.setup("tdd");
 
@@ -145,6 +146,37 @@ suite("boundary/pagina-busqueda-citas", function () {
             vista.querySelector("#cancelar").click();
             chai.expect(liberarUrl.calledWith("blob:pdf")).to.equal(true);
         } finally {
+            crearUrl.restore();
+            liberarUrl.restore();
+            clic.restore();
+        }
+    });
+
+    test("descargar ticket con aviso global deberia esperar a elegir ver PDF en linea", async function () {
+        let blob = new Blob(["%PDF-1.4"], { type: "application/pdf" });
+        stubs.push(sinon.stub(ConsultaService.prototype, "descargarTicket").resolves(blob));
+        let crearUrl = sinon.stub(URL, "createObjectURL").returns("blob:pdf");
+        let liberarUrl = sinon.stub(URL, "revokeObjectURL");
+        let clic = sinon.stub(HTMLAnchorElement.prototype, "click");
+        let aviso = document.createElement("aviso-instalar-app");
+        aviso.id = "avisoInstalarGlobal";
+        document.body.appendChild(aviso);
+        try {
+            let el = crear(); await tick(10);
+            el.descargarTicket({ idConsulta: "c1" });
+            await tick(40);
+            chai.expect(aviso.aviso.hidden).to.equal(false);
+            chai.expect(document.querySelector('[role="dialog"][aria-modal="true"]')).to.equal(null);
+            aviso.root.querySelector(".aviso-instalar__ver").click();
+            await tick(10);
+            let vista = document.querySelector('[role="dialog"][aria-modal="true"]');
+            chai.expect(vista).to.exist;
+            chai.expect(vista.querySelector("#pdf").getAttribute("src")).to.include("blob:pdf");
+            chai.expect(clic.called).to.equal(false);
+            vista.querySelector("#cancelar").click();
+            chai.expect(liberarUrl.calledWith("blob:pdf")).to.equal(true);
+        } finally {
+            aviso.remove();
             crearUrl.restore();
             liberarUrl.restore();
             clic.restore();

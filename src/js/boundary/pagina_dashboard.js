@@ -10,9 +10,9 @@ import ProcedimientoService from "../control/procedimiento_service.js";
 import ProcedimientoPasoService from "../control/procedimiento_paso_service.js";
 import ProcedimientoPasoSecuenciaService from "../control/procedimiento_paso_secuencia_service.js";
 import { contextosDeEmpleado, nombreCompleto } from "../model/citas.js";
-import { hoyISO } from "../model/fechas.js";
 import { ordenarPasos } from "../model/secuencia.js";
 import { construirHash } from "../model/rutas.js";
+import { consultaAtendible } from "../model/atencion.js";
 
 /**
  * Dashboard del empleado. Permite elegir la clínica y el rol, consultar
@@ -31,6 +31,7 @@ class PaginaDashboard extends PaginaBase {
         this.catalogoProcedimientos = new Map();
         this.citas = [];
         this.cargando = false;
+        this.ocultas = new Set();
     }
 
     contenido() {
@@ -77,8 +78,8 @@ class PaginaDashboard extends PaginaBase {
         this.consultas = this.q("#consultas");
         this.resultados = this.q("#resultados");
         this.q("#saludo").textContent = "Bienvenido, " + nombreCompleto(sesion.usuario);
-        this.q("#desde").value = hoyISO();
-        this.q("#hasta").value = hoyISO();
+        this.q("#desde").value = "";
+        this.q("#hasta").value = "";
 
         this.contextos = contextosDeEmpleado(sesion.asignaciones);
         if (this.contextos.length === 0) {
@@ -96,6 +97,10 @@ class PaginaDashboard extends PaginaBase {
         });
         this.q("#buscar").addEventListener("click", () => this.buscarConsultas());
         this.q("#cuadricula").addEventListener("atender", evento => {
+            if (!this.conectadoABackend) {
+                this.aplicarConectividad(false);
+                return;
+            }
             let id = evento.detail.consulta.idConsulta;
             location.hash = construirHash("/atencion", { id: id });
         });
@@ -104,11 +109,27 @@ class PaginaDashboard extends PaginaBase {
             this.contexto.seleccionActual = sesion;
             this.contexto.bloqueado = sesion.bloqueado;
             this.consultas.hidden = false;
-            if (sesion.bloqueado) {
+            if (sesion.bloqueado && this.conectadoABackend) {
                 this.buscarConsultas();
             }
         }
         this.cargarCatalogo();
+    }
+
+    aplicarConectividad(conectado) {
+        if (!this.mensaje) {
+            return;
+        }
+        if (this.contexto) {
+            this.contexto.bloqueado = !conectado || sesion.bloqueado;
+        }
+        let boton = this.q("#buscar");
+        if (boton) {
+            boton.disabled = !conectado;
+        }
+        if (!conectado) {
+            this.mensaje.mostrar("error", "Sin conexión con el backend. No puede buscar ni atender consultas.");
+        }
     }
 
     pintarContextos() {
@@ -123,6 +144,10 @@ class PaginaDashboard extends PaginaBase {
     }
 
     elegirContexto(contexto) {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         let elegido = contexto || this.contexto.seleccion;
         if (!elegido) {
             this.mensaje.mostrar("error", "Seleccione una clínica y un rol válidos.");
@@ -133,7 +158,7 @@ class PaginaDashboard extends PaginaBase {
             this.consultas.hidden = false;
             return;
         }
-        sesion.confirmarContexto(elegido.clinica, elegido.rol);
+        sesion.confirmarContexto(elegido.clinica, elegido.rol, elegido.idPersonaRol);
         this.contexto.bloqueado = true;
         this.consultas.hidden = false;
         this.mensaje.mostrar("exito",
@@ -151,6 +176,10 @@ class PaginaDashboard extends PaginaBase {
     }
 
     buscarConsultas() {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         if (!sesion.clinica || !sesion.rol) {
             this.mensaje.mostrar("error", "Primero seleccione la clínica y el rol.");
             return;
@@ -163,9 +192,12 @@ class PaginaDashboard extends PaginaBase {
         this.cargando = true;
         this.resultados.hidden = true;
         this.mensaje.mostrar("cargando", "Buscando consultas…");
+        this.ocultas.clear();
         new ConsultaService().buscar({
             idClinica: sesion.clinica.idClinica,
             idRol: sesion.rol.idRol,
+            ocultarTerminadas: true,
+            soloPendientesParaRol: true,
             desde: this.q("#desde").value,
             hasta: this.q("#hasta").value
         }).then(resp => {
@@ -181,17 +213,18 @@ class PaginaDashboard extends PaginaBase {
 
     pintarConsultas() {
         this.resultados.hidden = false;
-        this.q("#conteo").textContent = this.citas.length === 1
-            ? "1 consulta" : this.citas.length + " consultas";
+        let visibles = this.citas.filter(cita => !this.ocultas.has(cita.idConsulta));
+        this.actualizarConteo(visibles.length);
         let cuadricula = this.q("#cuadricula");
-        if (this.citas.length === 0) {
+        if (visibles.length === 0) {
             let vacio = document.createElement("mensaje-panel");
-            vacio.mostrar("info", "No hay consultas para la clínica y fechas seleccionadas.");
+            vacio.mostrar("info", "No hay consultas pendientes para la clínica y fechas seleccionadas.");
             cuadricula.replaceChildren(vacio);
             return;
         }
-        let tarjetas = this.citas.map(cita => {
+        let tarjetas = visibles.map(cita => {
             let tarjeta = document.createElement("tarjeta-consulta");
+            tarjeta.dataset.id = cita.idConsulta;
             tarjeta.idRol = sesion.rol ? sesion.rol.idRol : null;
             tarjeta.consulta = cita;
             tarjeta.detalle = null;
@@ -199,6 +232,29 @@ class PaginaDashboard extends PaginaBase {
             return tarjeta;
         });
         cuadricula.replaceChildren(...tarjetas);
+    }
+
+    actualizarConteo(cantidad) {
+        this.q("#conteo").textContent = cantidad === 1 ? "1 consulta" : cantidad + " consultas";
+    }
+
+    ocultarTarjeta(idConsulta) {
+        if (this.ocultas.has(idConsulta)) {
+            return;
+        }
+        this.ocultas.add(idConsulta);
+        let tarjeta = Array.from(this.q("#cuadricula").querySelectorAll("tarjeta-consulta"))
+            .find(item => item.dataset.id === String(idConsulta));
+        if (tarjeta) {
+            tarjeta.remove();
+        }
+        let restantes = this.citas.filter(cita => !this.ocultas.has(cita.idConsulta));
+        this.actualizarConteo(restantes.length);
+        if (restantes.length === 0) {
+            let vacio = document.createElement("mensaje-panel");
+            vacio.mostrar("info", "No hay consultas pendientes para la clínica y fechas seleccionadas.");
+            this.q("#cuadricula").replaceChildren(vacio);
+        }
     }
 
     cargarDetalle(cita, tarjeta) {
@@ -222,6 +278,11 @@ class PaginaDashboard extends PaginaBase {
                 }));
             }));
         }).then(procedimientos => {
+            if (procedimientos.length > 0
+                    && !consultaAtendible(procedimientos, sesion.rol ? sesion.rol.idRol : null)) {
+                this.ocultarTarjeta(cita.idConsulta);
+                return;
+            }
             tarjeta.detalle = { procedimientos: procedimientos };
         }).catch(() => {
             tarjeta.detalle = { procedimientos: [] };

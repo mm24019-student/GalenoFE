@@ -53,6 +53,19 @@ suite("boundary/aviso-instalar-app", function () {
         chai.expect(el.aviso.hidden).to.equal(true);
     });
 
+    test("abrirModal deberia permitir ver el PDF en linea", async function () {
+        promoverInstalacion();
+        let el = crear();
+        await tick(10);
+        let vistas = 0;
+        el.abrirModal(() => { vistas++; });
+        chai.expect(el.aviso.hidden).to.equal(false);
+        chai.expect(el.botonVerLinea.textContent).to.include("Solo ver PDF en línea");
+        el.botonVerLinea.click();
+        chai.expect(vistas).to.equal(1);
+        chai.expect(el.aviso.hidden).to.equal(true);
+    });
+
     test("cancelar deberia ocultar el aviso", async function () {
         promoverInstalacion();
         let el = crear();

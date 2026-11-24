@@ -12,7 +12,8 @@ import ProcedimientoPasoSecuenciaService from "../control/procedimiento_paso_sec
 import { formatearFecha, formatearSoloFecha, ahoraISO } from "../model/fechas.js";
 import { nombreClinica, nombreCompleto, nombreRol } from "../model/citas.js";
 import { ordenarPasos, pasosOrdenados, idDePasoConsulta } from "../model/secuencia.js";
-import { esCompletado } from "../model/atencion.js";
+import { esCompletado, idRolDePaso } from "../model/atencion.js";
+import { nuevoId } from "../model/ids.js";
 
 /**
  * Atención de una consulta. Permite registrar el seguimiento de un paso,
@@ -34,6 +35,7 @@ class PaginaAtencion extends PaginaBase {
         this.panelExamenes = null;
         this.motivo = null;
         this.idConsulta = null;
+        this.idProcedimientoFijado = null;
     }
 
     contenido() {
@@ -50,6 +52,7 @@ class PaginaAtencion extends PaginaBase {
                         <div>
                             <label for="procedimiento">Procedimiento</label>
                             <select id="procedimiento"></select>
+                            <span id="fijado" class="fijado" hidden>Procedimiento fijado para esta atención</span>
                         </div>
                         <div>
                             <label for="nuevoProcedimiento">Agregar otro procedimiento</label>
@@ -100,14 +103,6 @@ class PaginaAtencion extends PaginaBase {
         this.panelExamenes = this.q("#panelExamenes");
         this.motivo = this.q("#motivo");
         this.idConsulta = this.parametros.get("id");
-        if (!sesion.activa) {
-            this.mensaje.mostrar("error", "Debe iniciar sesión para atender una consulta.");
-            return;
-        }
-        if (!this.idConsulta) {
-            this.mensaje.mostrar("error", "Seleccione una consulta desde el dashboard.");
-            return;
-        }
         this.q("#procedimiento").addEventListener("change", evento => {
             this.seleccionarProcedimiento(evento.target.value);
         });
@@ -117,11 +112,53 @@ class PaginaAtencion extends PaginaBase {
         this.q("#retroceder").addEventListener("click", () => this.retroceder());
         this.q("#finalizar").addEventListener("click", () => this.finalizar());
         this.q("#estado").addEventListener("change", () => this.actualizarBotones());
-        this.motivo.addEventListener("motivo-confirmado", evento => this.devolverPaso(evento.detail.motivo));
+        this.motivo.addEventListener("motivo-confirmado", evento =>
+            this.devolverPaso(evento.detail.motivo, evento.detail.paso));
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
+        if (!sesion.activa) {
+            this.mensaje.mostrar("error", "Debe iniciar sesión para atender una consulta.");
+            return;
+        }
+        if (!sesion.bloqueado) {
+            this.mensaje.mostrar("error", "Confirme la clínica y el rol antes de atender una consulta.");
+            return;
+        }
+        if (!this.idConsulta) {
+            this.mensaje.mostrar("error", "Seleccione una consulta desde el dashboard.");
+            return;
+        }
         this.cargar();
     }
 
+    aplicarConectividad(conectado) {
+        if (!this.mensaje) {
+            return;
+        }
+        let reconectando = this._conectado === false && conectado;
+        this._conectado = conectado;
+        if (!conectado) {
+            this.contenido.hidden = true;
+            this.mensaje.mostrar("error", "Sin conexión con el backend. No puede atender consultas.");
+        }
+        ["#guardar", "#retroceder", "#avanzar", "#finalizar", "#agregar"].forEach(selector => {
+            let boton = this.q(selector);
+            if (boton) {
+                boton.disabled = !conectado;
+            }
+        });
+        if (reconectando && sesion.activa && sesion.bloqueado && this.idConsulta) {
+            this.cargar();
+        }
+    }
+
     cargar() {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return Promise.resolve();
+        }
         this.mensaje.mostrar("cargando", "Cargando la consulta…");
         new ConsultaService().findById(this.idConsulta).then(resp => {
             this.consulta = resp.datos;
@@ -158,8 +195,8 @@ class PaginaAtencion extends PaginaBase {
     }
 
     cargarProcedimientos(mantenerSeleccion = true) {
-        let idActual = mantenerSeleccion && this.procedimientoActual
-            ? this.procedimientoActual.id : null;
+        let idActual = this.idProcedimientoFijado || (mantenerSeleccion && this.procedimientoActual
+            ? this.procedimientoActual.id : null);
         let cpService = new ConsultaProcedimientoService();
         let pasoService = new ConsultaProcedimientoPasoService();
         let definicionService = new ProcedimientoPasoService();
@@ -195,7 +232,7 @@ class PaginaAtencion extends PaginaBase {
                 return;
             }
             let elegido = procedimientos.find(p => p.id === idActual) || procedimientos[0];
-            this.seleccionarProcedimiento(elegido.id);
+            this.seleccionarProcedimiento(elegido.id, true, true);
         }).catch(error => {
             this.mensaje.mostrar("error", error.message || "No se pudieron cargar los procedimientos.");
         });
@@ -240,10 +277,18 @@ class PaginaAtencion extends PaginaBase {
         select.value = actual || "";
     }
 
-    seleccionarProcedimiento(id) {
+    seleccionarProcedimiento(id, fijar = false, forzar = false) {
         let procedimiento = this.procedimientos.find(p => p.id === id) || this.procedimientos[0];
         if (!procedimiento) {
             return;
+        }
+        if (this.idProcedimientoFijado && !forzar && this.idProcedimientoFijado !== procedimiento.id) {
+            this.mensaje.mostrar("info", "El procedimiento quedó fijado para esta atención.");
+            this.q("#procedimiento").value = this.idProcedimientoFijado;
+            return;
+        }
+        if (fijar) {
+            this.idProcedimientoFijado = procedimiento.id;
         }
         this.procedimientoActual = procedimiento;
         this.indiceActual = this.indicePasoInicial();
@@ -255,6 +300,8 @@ class PaginaAtencion extends PaginaBase {
             return opcion;
         }));
         select.value = procedimiento.id;
+        select.disabled = Boolean(this.idProcedimientoFijado);
+        this.q("#fijado").hidden = !this.idProcedimientoFijado;
         this.pintarPasos();
         this.pintarAtencion();
     }
@@ -267,7 +314,23 @@ class PaginaAtencion extends PaginaBase {
     }
 
     pasosAtendibles() {
-        return this.pasosActuales().filter(paso => this.esPasoPropio(paso) && !esCompletado(paso));
+        return this.pasosActuales().filter(paso => {
+            let estado = String(paso && paso.estado || "").toUpperCase();
+            return this.esPasoPropio(paso) && !esCompletado(paso) && estado !== "CANCELADO";
+        });
+    }
+
+    pasosMostrables() {
+        return this.pasosActuales().filter(paso => this.esPasoPropio(paso));
+    }
+
+    estadoMostrado(paso) {
+        let estado = String(paso && paso.estado || "PENDIENTE").toUpperCase();
+        let global = this.pasosActuales().indexOf(paso);
+        if (paso && paso.estadoMostrado) {
+            return String(paso.estadoMostrado).toUpperCase();
+        }
+        return global > 0 && estado === "EN_PROCESO" ? "COMPLETADO" : estado;
     }
 
     indicePasoInicial() {
@@ -292,16 +355,13 @@ class PaginaAtencion extends PaginaBase {
     }
 
     idRolDePaso(paso) {
-        let definicion = this.definicionDe(paso);
-        if (definicion.idRol) {
-            return definicion.idRol.idRol || null;
-        }
-        return paso && paso.idPersonaRol && paso.idPersonaRol.idRol
-            ? paso.idPersonaRol.idRol.idRol || null
-            : null;
+        return idRolDePaso(paso, this.definicionDe(paso));
     }
 
     esPasoPropio(paso) {
+        if (!sesion.bloqueado) {
+            return false;
+        }
         let idRolSesion = sesion.rol ? sesion.rol.idRol : null;
         if (!idRolSesion) {
             return false;
@@ -312,7 +372,7 @@ class PaginaAtencion extends PaginaBase {
 
     pintarPasos() {
         let lista = this.q("#pasos");
-        let pasos = this.pasosAtendibles();
+        let pasos = this.pasosMostrables();
         if (pasos.length === 0) {
             let vacio = document.createElement("li");
             vacio.className = "meta";
@@ -322,33 +382,44 @@ class PaginaAtencion extends PaginaBase {
             lista.replaceChildren(vacio);
             return;
         }
-        if (this.indiceActual < 0 || this.indiceActual >= pasos.length) {
+        let atendibles = this.pasosAtendibles();
+        if (atendibles.length === 0) {
+            this.indiceActual = -1;
+        } else if (this.indiceActual < 0 || this.indiceActual >= atendibles.length) {
             this.indiceActual = 0;
         }
-        lista.replaceChildren(...pasos.map((paso, indice) => {
+        lista.replaceChildren(...pasos.map((paso, numero) => {
             let li = document.createElement("li");
-            let boton = document.createElement("button");
-            boton.type = "button";
-            if (indice === this.indiceActual) {
-                boton.setAttribute("aria-current", "step");
+            let editable = atendibles.indexOf(paso) >= 0;
+            let indice = atendibles.indexOf(paso);
+            let control = editable ? document.createElement("button") : document.createElement("div");
+            if (editable) {
+                control.type = "button";
+            } else {
+                control.className = "solo-lectura";
             }
-            let numero = document.createElement("span");
-            numero.textContent = String(indice + 1);
+            if (editable && indice === this.indiceActual) {
+                control.setAttribute("aria-current", "step");
+            }
+            let numeroPaso = document.createElement("span");
+            numeroPaso.textContent = String(numero + 1);
             let nombre = document.createElement("span");
             nombre.className = "nombre";
             let definicion = paso.idProcedimientoPaso || {};
             nombre.textContent = definicion.nombre || "Paso";
             let estado = document.createElement("span");
-            let valorEstado = String(paso.estado || "PENDIENTE").toUpperCase();
+            let valorEstado = this.estadoMostrado(paso);
             estado.className = "estado " + valorEstado;
             estado.textContent = valorEstado.replace("_", " ");
-            boton.append(numero, nombre, estado);
-            boton.addEventListener("click", () => {
-                this.indiceActual = indice;
-                this.pintarPasos();
-                this.pintarAtencion();
-            });
-            li.appendChild(boton);
+            control.append(numeroPaso, nombre, estado);
+            if (editable) {
+                control.addEventListener("click", () => {
+                    this.indiceActual = indice;
+                    this.pintarPasos();
+                    this.pintarAtencion();
+                });
+            }
+            li.appendChild(control);
             return li;
         }));
     }
@@ -366,7 +437,7 @@ class PaginaAtencion extends PaginaBase {
         }
         this.q("#atencion").classList.remove("oculto");
         let definicion = this.definicionDe(paso);
-        let propio = this.esPasoPropio(paso);
+        let propio = this.esPasoPropio(paso) && this.conectadoABackend;
         this.q("#tituloPaso").textContent = "Atención del paso: " + (definicion.nombre || "Paso");
         this.q("#metaPaso").textContent = "Inicio: " + formatearFecha(paso.fechaInicio);
         this.q("#valor").value = paso.valor || "";
@@ -385,6 +456,10 @@ class PaginaAtencion extends PaginaBase {
     }
 
     guardar(avanzar) {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return Promise.resolve(false);
+        }
         let paso = this.pasoActual();
         if (!paso) {
             return Promise.resolve();
@@ -414,12 +489,18 @@ class PaginaAtencion extends PaginaBase {
                 }
                 return true;
             })
-            .then(continuar => {
-                if (!continuar) {
-                    return;
+            .then(resultado => {
+                if (!resultado || resultado.continuar === false) {
+                    return false;
+                }
+                if (resultado.salirAtencion) {
+                    this.mensaje.mostrar("exito", "Paso completado. Las siguientes tareas pertenecen a otro rol.");
+                    location.hash = "#/dashboard";
+                    return false;
                 }
                 return this.recargarPasos(paso.idConsultaProcedimientoPaso).then(() => {
                     this.mensaje.mostrar("exito", "Atención guardada correctamente.");
+                    return true;
                 });
             })
             .catch(error => {
@@ -447,28 +528,40 @@ class PaginaAtencion extends PaginaBase {
         let procedimiento = this.procedimientoActual;
         let actual = this.pasoActual();
         if (!procedimiento || !actual) {
-            return Promise.resolve(false);
+            return Promise.resolve({ continuar: false });
         }
         if (!this.esPasoPropio(actual)) {
             this.mensaje.mostrar("error", "Este paso corresponde a otro rol.");
-            return Promise.resolve(false);
+            return Promise.resolve({ continuar: false });
         }
         let definiciones = procedimiento.orden || [];
         let posicion = definiciones.findIndex(d => d.idProcedimientoPaso === idDePasoConsulta(actual));
         if (posicion < 0 || posicion >= definiciones.length - 1) {
             this.mensaje.mostrar("info", "Este ya es el último paso del procedimiento.");
-            return Promise.resolve(false);
+            return Promise.resolve({ continuar: false });
         }
         this.mensaje.mostrar("cargando", "Avanzando al siguiente paso…");
         return new ConsultaProcedimientoPasoService().avanzar(actual.idConsultaProcedimientoPaso)
-            .then(() => true)
+            .then(respuesta => {
+                let datos = respuesta && respuesta.datos ? respuesta.datos : {};
+                return {
+                    continuar: true,
+                    salirAtencion: Boolean(datos.salirAtencion),
+                    idRolSiguiente: datos.idRolSiguiente || null,
+                    nombreRolSiguiente: datos.nombreRolSiguiente || null
+                };
+            })
             .catch(error => {
                 this.mensaje.mostrar("error", error.message || "No se pudo avanzar de paso.");
-                return false;
+                return { continuar: false };
             });
     }
 
     retroceder() {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         let procedimiento = this.procedimientoActual;
         let actual = this.pasoActual();
         if (!procedimiento || !actual) {
@@ -483,8 +576,12 @@ class PaginaAtencion extends PaginaBase {
         this.motivo.abrir(actual);
     }
 
-    devolverPaso(motivo) {
-        let paso = this.pasoActual();
+    devolverPaso(motivo, pasoConfirmado = null) {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return Promise.resolve();
+        }
+        let paso = pasoConfirmado || this.pasoActual();
         if (!paso || !motivo) {
             return Promise.resolve();
         }
@@ -495,32 +592,22 @@ class PaginaAtencion extends PaginaBase {
         let servicio = new ConsultaProcedimientoPasoService();
         this.mensaje.mostrar("cargando", "Devolviendo el paso…");
         return servicio.update(paso.idConsultaProcedimientoPaso, Object.assign({}, paso, { valor: valor }))
-            .then(() => servicio.retroceder(paso.idConsultaProcedimientoPaso))
-            .then(respuesta => this.registrarMotivoEnAnterior(servicio, respuesta.datos, aviso))
+            .then(() => servicio.retroceder(paso.idConsultaProcedimientoPaso, aviso))
             .then(() => this.recargarPasos(paso.idConsultaProcedimientoPaso))
             .then(() => {
                 this.mensaje.mostrar("exito", "Paso devuelto con el motivo registrado.");
+                location.hash = "#/dashboard";
             })
             .catch(error => {
                 this.mensaje.mostrar("error", error.message || "No se pudo devolver el paso.");
             });
     }
 
-    registrarMotivoEnAnterior(servicio, anterior, aviso) {
-        if (!anterior || !anterior.idConsultaProcedimientoPaso) {
-            return Promise.resolve();
-        }
-        return servicio.findById(anterior.idConsultaProcedimientoPaso).then(respuesta => {
-            let paso = respuesta.datos;
-            if (!paso) {
-                return;
-            }
-            let valor = [String(paso.valor || "").trim(), aviso].filter(Boolean).join("\n");
-            return servicio.update(paso.idConsultaProcedimientoPaso, Object.assign({}, paso, { valor: valor }));
-        });
-    }
-
     agregarProcedimiento() {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         let idProcedimiento = this.q("#nuevoProcedimiento").value;
         if (!idProcedimiento) {
             this.mensaje.mostrar("error", "Seleccione un procedimiento para agregar.");
@@ -550,14 +637,19 @@ class PaginaAtencion extends PaginaBase {
             ? definiciones.findIndex(d => d.idProcedimientoPaso === idDePasoConsulta(paso)) : -1;
         let completado = estado === "COMPLETADO";
         let propio = paso ? this.esPasoPropio(paso) : false;
+        let enLinea = this.conectadoABackend;
         let haySiguiente = posicion >= 0 && posicion < definiciones.length - 1;
         let esUltimo = definiciones.length > 0 && posicion === definiciones.length - 1;
-        this.q("#retroceder").disabled = !propio || posicion <= 0;
-        this.q("#avanzar").disabled = !propio || !completado || !haySiguiente;
-        this.q("#finalizar").disabled = !propio || !completado || !esUltimo;
+        this.q("#retroceder").disabled = !enLinea || !propio || posicion <= 0;
+        this.q("#avanzar").disabled = !enLinea || !propio || !completado || !haySiguiente;
+        this.q("#finalizar").disabled = !enLinea || !propio || !completado || !esUltimo;
     }
 
     finalizar() {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return Promise.resolve();
+        }
         if (this.q("#finalizar").disabled) {
             return Promise.resolve();
         }

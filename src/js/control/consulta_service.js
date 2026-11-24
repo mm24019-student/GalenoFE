@@ -30,7 +30,7 @@ class ConsultaService extends DefaultService {
     }
 
     descargarTicket(id) {
-        return fetch(this.urlTicket(id), { method: "GET" }).then(r => {
+        return this.peticion(this.urlTicket(id), { method: "GET" }).then(r => {
             if (r.status !== 200) {
                 throw new Error("No se pudo generar el comprobante (" + r.status + ")");
             }

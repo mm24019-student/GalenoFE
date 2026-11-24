@@ -90,7 +90,24 @@ class PaginaBusquedaCitas extends PaginaBase {
         });
     }
 
+    aplicarConectividad(conectado) {
+        if (!this.mensaje) {
+            return;
+        }
+        if (this.selector) {
+            this.selector.bloqueado = !conectado;
+        }
+        let boton = this.q("#buscarCitas");
+        if (boton) {
+            boton.disabled = !conectado;
+        }
+        if (!conectado) {
+            this.mensaje.mostrar("error", "Sin conexión con el backend. No puede buscar citas ni ver comprobantes.");
+        }
+    }
+
     disconnectedCallback() {
+        super.disconnectedCallback();
         if (this.cerrarVista) {
             this.cerrarVista();
         }
@@ -102,6 +119,10 @@ class PaginaBusquedaCitas extends PaginaBase {
     }
 
     buscarPaciente(datos) {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         this.paciente = null;
         this.tipoDocumento = null;
         this.valorDocumento = null;
@@ -146,6 +167,10 @@ class PaginaBusquedaCitas extends PaginaBase {
     }
 
     buscarCitas() {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         if (!this.paciente || !this.tipoDocumento || !this.valorDocumento) {
             this.mensaje.mostrar("error", "Primero identifíquese con su documento.");
             return;
@@ -226,16 +251,25 @@ class PaginaBusquedaCitas extends PaginaBase {
     }
 
     descargarTicket(cita) {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         if (!cita || !cita.idConsulta) {
             return;
         }
-        let aviso = document.getElementById("avisoInstalarGlobal");
-        if (aviso && typeof aviso.mostrar === "function") {
-            aviso.mostrar();
-        }
         this.mensaje.mostrar("cargando", "Generando el comprobante en el servidor…");
         new ConsultaService().descargarTicket(cita.idConsulta).then(blob => {
-            this.mostrarVistaPrevia(blob, cita);
+            let abrir = () => this.mostrarVistaPrevia(blob, cita);
+            let aviso = document.getElementById("avisoInstalarGlobal");
+            if (aviso && typeof aviso.abrirModal === "function") {
+                aviso.abrirModal(abrir);
+                if (!aviso.aviso || aviso.aviso.hidden) {
+                    abrir();
+                }
+                return;
+            }
+            abrir();
         }).catch(error => {
             this.mensaje.mostrar("error", error.message || "No se pudo mostrar el comprobante.");
         });

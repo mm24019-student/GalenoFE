@@ -50,10 +50,10 @@ export function esCompletado(paso) {
     return String((paso && paso.estado) || "").toUpperCase() === "COMPLETADO";
 }
 
-export function idRolDePaso(paso) {
-    let definicion = paso && paso.idProcedimientoPaso;
-    if (definicion && definicion.idRol) {
-        return definicion.idRol.idRol || null;
+export function idRolDePaso(paso, definicion = null) {
+    let fuente = definicion || (paso && paso.idProcedimientoPaso);
+    if (fuente && fuente.idRol) {
+        return fuente.idRol.idRol || null;
     }
     if (paso && paso.idPersonaRol && paso.idPersonaRol.idRol) {
         return paso.idPersonaRol.idRol.idRol || null;
@@ -61,11 +61,11 @@ export function idRolDePaso(paso) {
     return null;
 }
 
-export function pasoCorrespondeRol(paso, idRol) {
+export function pasoCorrespondeRol(paso, idRol, definicion = null) {
     if (!paso) {
         return false;
     }
-    let rol = idRolDePaso(paso);
+    let rol = idRolDePaso(paso, definicion);
     if (!idRol) {
         return true;
     }
@@ -77,20 +77,15 @@ export function consultaAtendible(procedimientos, idRol) {
         if (!procedimiento) {
             return false;
         }
-        let pasos = (procedimiento.pasos || []).filter(Boolean);
-        let pendientes = pasos.filter(paso => !esCompletado(paso) && pasoCorrespondeRol(paso, idRol));
-        if (pendientes.length === 0) {
-            return false;
-        }
         let definiciones = procedimiento.orden || [];
-        let finales = definiciones.filter(definicion => definicion && definicion.indicaFin === true);
-        if (finales.length === 0 && definiciones.length > 0) {
-            finales = [definiciones[definiciones.length - 1]];
-        }
-        let finalCompletado = finales.some(definicion => pasos.some(paso => {
+        let porId = new Map(definiciones.filter(Boolean)
+            .map(definicion => [definicion.idProcedimientoPaso, definicion]));
+        let pasos = (procedimiento.pasos || []).filter(Boolean);
+        return pasos.some(paso => {
             let id = paso.idProcedimientoPaso ? paso.idProcedimientoPaso.idProcedimientoPaso : null;
-            return id === definicion.idProcedimientoPaso && esCompletado(paso);
-        }));
-        return !finalCompletado;
+            let cancelado = String(paso.estado || "").toUpperCase() === "CANCELADO";
+            return !cancelado && !esCompletado(paso)
+                && pasoCorrespondeRol(paso, idRol, porId.get(id) || null);
+        });
     });
 }

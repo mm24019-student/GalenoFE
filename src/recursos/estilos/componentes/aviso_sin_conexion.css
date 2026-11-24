@@ -7,7 +7,19 @@
     pointer-events: none;
 }
 
+.bloqueo {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    background: transparent;
+    pointer-events: auto;
+    cursor: not-allowed;
+}
+.bloqueo[hidden] { display: none; }
+
 .aviso {
+    position: relative;
+    z-index: 1600;
     display: flex;
     align-items: center;
     gap: var(--espacio-2);

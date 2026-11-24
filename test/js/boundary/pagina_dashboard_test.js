@@ -86,10 +86,15 @@ suite("boundary/pagina-dashboard", function () {
         stubs.push(sinon.stub(ProcedimientoPasoService.prototype, "porProcedimiento").resolves({ datos: [] }));
         stubs.push(sinon.stub(ProcedimientoPasoSecuenciaService.prototype, "porProcedimiento").resolves({ datos: [] }));
         let el = crear(); await tick(20);
+        chai.expect(el.q("#desde").value).to.equal("");
+        chai.expect(el.q("#hasta").value).to.equal("");
         el.elegirContexto(el.contexto.seleccion); await tick(60);
         let filtros = ConsultaService.prototype.buscar.firstCall.args[0];
         chai.expect(filtros.idClinica).to.equal("c1");
         chai.expect(filtros.idRol).to.equal("r1");
+        chai.expect(filtros.idPersonaRol).to.equal(undefined);
+        chai.expect(filtros.ocultarTerminadas).to.equal(true);
+        chai.expect(filtros.soloPendientesParaRol).to.equal(true);
         chai.expect(el.resultados.hidden).to.equal(false);
         chai.expect(el.root.querySelectorAll("tarjeta-consulta").length).to.equal(1);
     });

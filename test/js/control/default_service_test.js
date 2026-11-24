@@ -3,6 +3,7 @@ import sinon from "../lib/sinon/sinon-esm.js";
 import DefaultService from "../../../src/js/control/default_service.js";
 import DefaultError from "../../../src/js/entity/default_error.js";
 import DefaultResponse from "../../../src/js/entity/default_response.js";
+import { sesion } from "../../../src/js/control/sesion.js";
 mocha.setup("tdd");
 
 suite("DefaultService errores y casos limite", function () {
@@ -166,6 +167,22 @@ suite("DefaultService errores y casos limite", function () {
                 done();
             } catch (e) { done(e); }
         });
+    });
+
+    test("peticiones deberian enviar el idPersonaRol de la sesion", async function () {
+        sesion.iniciar({ idPersona: "emp1", nombres: "Doc" }, [{
+            rol: { idRol: "r1" },
+            clinica: { idClinica: "c1" },
+            idPersonaRol: "pr-9"
+        }]);
+        sesion.confirmarContexto({ idClinica: "c1" }, { idRol: "r1" }, "pr-9");
+        stubFetch = sinon.stub(window, "fetch").resolves(response([], 200));
+        try {
+            await svc.findRange(0, 10);
+            chai.expect(stubFetch.firstCall.args[1].headers["X-Id-Persona-Rol"]).to.equal("pr-9");
+        } finally {
+            sesion.cerrar();
+        }
     });
 
     test("motivoPorEstado y utilidades deberia cubrir casos conocidos", function () {

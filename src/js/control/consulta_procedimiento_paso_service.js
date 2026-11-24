@@ -11,9 +11,9 @@ class ConsultaProcedimientoPasoService extends DefaultService {
         return this.findBy(`${this.URL}/consultaprocedimiento/${id}`);
     }
 
-    accion(id, nombre) {
+    accion(url) {
         return new Promise((resolve, reject) => {
-            fetch(`${this.URL}/${id}/${nombre}`, { method: "POST" }).then(r => {
+            this.peticion(url, { method: "POST" }).then(r => {
                 if (r.status === 200) {
                     r.json().then(j => {
                         let response = new DefaultResponse();
@@ -35,11 +35,15 @@ class ConsultaProcedimientoPasoService extends DefaultService {
     }
 
     avanzar(id) {
-        return this.accion(id, "avanzar");
+        return this.accion(`${this.URL}/${id}/avanzar`);
     }
 
-    retroceder(id) {
-        return this.accion(id, "retroceder");
+    retroceder(id, motivo) {
+        let url = `${this.URL}/${id}/retroceder`;
+        if (motivo) {
+            url += `?motivo=${encodeURIComponent(motivo)}`;
+        }
+        return this.accion(url);
     }
 }
 export default ConsultaProcedimientoPasoService;

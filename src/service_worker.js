@@ -1,11 +1,6 @@
-// Service worker de GalenoFE.
-// - Al instalarse guarda TODA la app (precache), asi abre sin servidor.
-// - Archivos de la app: primero la red, y si falla lo guardado.
-// - GET de la API REST: primero la red, y si el backend esta apagado, lo ultimo consultado.
 import { URL_API, MENSAJE_ESTADO_BACKEND, MENSAJE_CONFIGURAR_API } from "./js/model/config.js";
 
-const CACHE = "galeno-fe-v24";
-const CACHE_API = "galeno-api-v1";
+const CACHE = "galeno-fe-v25";
 let urlApi = URL_API;
 
 self.addEventListener("message", evento => {
@@ -16,8 +11,6 @@ self.addEventListener("message", evento => {
     }
 });
 
-
-// Rutas relativas a este archivo (src/)
 const ARCHIVOS = [
     "./",
     "index.html",
@@ -63,6 +56,7 @@ const ARCHIVOS = [
     "js/boundary/tarjeta_cita.js",
     "js/boundary/tarjeta_consulta.js",
     "js/control/clinica_service.js",
+    "js/control/conectividad.js",
     "js/control/consulta_procedimiento_paso_service.js",
     "js/control/consulta_procedimiento_service.js",
     "js/control/consulta_service.js",
@@ -108,71 +102,62 @@ self.addEventListener("activate", evento => {
     evento.waitUntil(
         caches.keys()
             .then(nombres => Promise.all(
-                nombres.filter(n => n !== CACHE && n !== CACHE_API).map(n => caches.delete(n))))
+                nombres.filter(n => n !== CACHE).map(n => caches.delete(n))))
             .then(() => self.clients.claim())
     );
 });
 
-// Avisa a la pestaña si la API respondió por red o si se sirvió desde caché.
-function avisarEstado(idCliente, conectado) {
-    if (!idCliente || !self.clients) {
+function avisarEstado(conectado) {
+    if (!self.clients) {
         return;
     }
-    self.clients.get(idCliente).then(cliente => {
-        if (cliente) {
-            cliente.postMessage({ tipo: MENSAJE_ESTADO_BACKEND, conectado: conectado });
-        }
-    }).catch(() => {});
+    self.clients.matchAll({ type: "window", includeUncontrolled: true })
+        .then(clientes => clientes.forEach(cliente =>
+            cliente.postMessage({ tipo: MENSAJE_ESTADO_BACKEND, conectado: conectado })))
+        .catch(() => {});
 }
 
-// Intenta la red; si funciona guarda una copia, si falla devuelve la copia guardada.
-function redPrimero(peticion, nombreCache, alFallar, idCliente) {
-    const esApi = peticion.url.startsWith(urlApi);
+function redApi(peticion) {
     return fetch(peticion).then(respuesta => {
-        if (respuesta.ok) {
+        avisarEstado(true);
+        return respuesta;
+    }).catch(() => {
+        avisarEstado(false);
+        return Response.error();
+    });
+}
+
+function redPrimero(peticion, alFallar) {
+    return fetch(peticion).then(respuesta => {
+        if (respuesta.ok && respuesta.type === "basic") {
             const copia = respuesta.clone();
-            caches.open(nombreCache).then(cache => cache.put(peticion, copia));
-        }
-        if (esApi) {
-            avisarEstado(idCliente, true);
+            caches.open(CACHE).then(cache => cache.put(peticion, copia));
         }
         return respuesta;
-    }).catch(() => caches.open(nombreCache)
-        .then(cache => cache.match(peticion))
-        .then(guardada => {
-            if (esApi) {
-                avisarEstado(idCliente, false);
-            }
-            return guardada || alFallar();
-        }));
+    }).catch(() => caches.match(peticion).then(guardada => guardada || alFallar()));
 }
 
 self.addEventListener("fetch", evento => {
     const peticion = evento.request;
     const url = new URL(peticion.url);
 
-    // Solo se atienden los GET (POST, PUT y DELETE van siempre a la red)
     if (peticion.method !== "GET") {
         return;
     }
 
-    // API REST
     if (peticion.url.startsWith(urlApi)) {
-        evento.respondWith(redPrimero(peticion, CACHE_API, () => Response.error(), evento.clientId));
+        evento.respondWith(redApi(peticion));
         return;
     }
 
-    // Archivos de la aplicacion (mismo origen); BrowserSync pasa directo a la red
     if (url.origin !== self.location.origin
             || url.pathname.startsWith("/browser-sync")) {
         return;
     }
     evento.respondWith(
-        redPrimero(peticion, CACHE, () =>
-            // Sin red y sin copia: cualquier navegacion (/src/, /src/index.html, etc.) abre index.html.
-            // Un script o css que falta debe fallar de verdad (devolver HTML rompe los modulos).
+        redPrimero(peticion, () =>
             peticion.mode === "navigate"
                 ? caches.match("index.html").then(inicio => inicio || Response.error())
-                : Response.error(), evento.clientId)
+                : Response.error())
     );
 });

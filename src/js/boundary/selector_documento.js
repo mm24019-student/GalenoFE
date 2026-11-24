@@ -1,4 +1,5 @@
 import TipoDocumentoService from "../control/tipo_documento_service.js";
+import { conectividad } from "../control/conectividad.js";
 
 const plantilla = document.createElement("template");
 plantilla.innerHTML = `
@@ -36,6 +37,7 @@ class SelectorDocumento extends HTMLElement {
         this.cargado = false;
         this.estado = "inicial";
         this._bloqueado = false;
+        this.alCambiarConectividad = evento => this.aplicarConexion(evento.detail.conectado);
     }
 
     connectedCallback() {
@@ -50,7 +52,18 @@ class SelectorDocumento extends HTMLElement {
                 this.buscar();
             }
         });
+        conectividad.addEventListener("cambio", this.alCambiarConectividad);
+        this.aplicarConexion(conectividad.conectado);
         this.cargarTipos();
+    }
+
+    disconnectedCallback() {
+        conectividad.removeEventListener("cambio", this.alCambiarConectividad);
+    }
+
+    aplicarConexion(conectado) {
+        this.aplicarBloqueo();
+        this.q("#buscar").disabled = !conectado || this._bloqueado || this.ocupadoAhora === true;
     }
 
     q(selector) {
@@ -58,6 +71,9 @@ class SelectorDocumento extends HTMLElement {
     }
 
     cargarTipos() {
+        if (!conectividad.conectado) {
+            return;
+        }
         new TipoDocumentoService().findRange(0, 100).then(resp => {
             let select = this.q("#tipo");
             (resp.datos || []).filter(t => t.activo !== false).forEach(tipo => {
@@ -95,7 +111,7 @@ class SelectorDocumento extends HTMLElement {
     }
 
     buscar() {
-        if (this._bloqueado) {
+        if (this._bloqueado || !conectividad.conectado) {
             return;
         }
         if (!this.tipo) {
@@ -120,7 +136,8 @@ class SelectorDocumento extends HTMLElement {
 
     ocupado(valor) {
         let boton = this.q("#buscar");
-        boton.disabled = Boolean(valor) || this._bloqueado;
+        this.ocupadoAhora = Boolean(valor);
+        boton.disabled = this.ocupadoAhora || this._bloqueado || !conectividad.conectado;
         boton.textContent = valor ? "Buscando…" : "Buscar";
     }
 

@@ -23,7 +23,14 @@ suite("boundary/tarjeta-consulta", function () {
         let el = document.createElement("tarjeta-consulta");
         document.body.appendChild(el);
         el.consulta = { idConsulta: "c1", referenciaExterna: "R", fechaInicio: "2026-01-01T00:00:00Z", idPersonaRol: { idPersona: { nombres: "Ana" } } };
-        el.detalle = { procedimientos: [{ nombre: "P1", fechaInicio: null, orden: [], pasos: [] }] };
+        el.detalle = {
+            procedimientos: [{
+                nombre: "P1",
+                fechaInicio: null,
+                orden: [{ idProcedimientoPaso: "p1", idRol: { idRol: "r1" } }],
+                pasos: [{ idProcedimientoPaso: { idProcedimientoPaso: "p1" }, estado: "PENDIENTE" }]
+            }]
+        };
         el.addEventListener("atender", e => {
             try { chai.expect(e.detail.consulta.idConsulta).to.equal("c1"); done(); } catch (err) { done(err); }
         });

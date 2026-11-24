@@ -10,6 +10,10 @@ import "./galeno_router.js";
 import "./galeno_nav.js";
 import "./galeno_layout.js";
 import { URL_API, MENSAJE_CONFIGURAR_API } from "../model/config.js";
+import { conectividad } from "../control/conectividad.js";
+
+conectividad.configurarApi(URL_API);
+conectividad.iniciar();
 
 // PWA: el service worker permite instalar la aplicacion y abrirla sin conexion
 if ("serviceWorker" in navigator) {
@@ -19,6 +23,7 @@ if ("serviceWorker" in navigator) {
                 if (registro.active) {
                     registro.active.postMessage({ tipo: MENSAJE_CONFIGURAR_API, url: URL_API });
                 }
+                conectividad.verificar();
             };
             enviarApi();
             registro.addEventListener("controllerchange", enviarApi);

@@ -1,6 +1,7 @@
 import * as chai from "../lib/chai/index.js";
 import sinon from "../lib/sinon/sinon-esm.js";
 import { sesion } from "../../../src/js/control/sesion.js";
+import { conectividad } from "../../../src/js/control/conectividad.js";
 import ConsultaService from "../../../src/js/control/consulta_service.js";
 import ConsultaProcedimientoService from "../../../src/js/control/consulta_procedimiento_service.js";
 import ConsultaProcedimientoPasoService from "../../../src/js/control/consulta_procedimiento_paso_service.js";
@@ -44,9 +45,10 @@ suite("boundary/pagina-atencion", function () {
 
     setup(function () {
         hashOriginal = location.hash;
+        conectividad.marcar(true);
         sesion.cerrar();
         sesion.iniciar({ idPersona: "emp1", nombres: "Doc" }, [{ rol: { idRol: "r1", nombre: "Doctor" }, clinica: { idClinica: "c1", nombre: "C1" }, idPersonaRol: "pr1" }]);
-        sesion.confirmarContexto({ idClinica: "c1", nombre: "C1" }, { idRol: "r1", nombre: "Doctor" });
+        sesion.confirmarContexto({ idClinica: "c1", nombre: "C1" }, { idRol: "r1", nombre: "Doctor" }, "pr1");
     });
 
     teardown(function () {
@@ -54,6 +56,7 @@ suite("boundary/pagina-atencion", function () {
         stubs = [];
         document.querySelectorAll("pagina-atencion").forEach(e => e.remove());
         sesion.cerrar();
+        conectividad.marcar(true);
         location.hash = hashOriginal;
     });
 
@@ -174,20 +177,11 @@ suite("boundary/pagina-atencion", function () {
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("primer paso");
     });
 
-    test("devolver paso deberia mostrar el motivo al paso anterior", async function () {
+    test("devolver paso deberia enviar el motivo en retroceder", async function () {
         baseStubs({ pasos: [pasoA, pasoB] });
         stubs.push(sinon.stub(ConsultaProcedimientoPasoService.prototype, "update").resolves({ datos: {} }));
         stubs.push(sinon.stub(ConsultaProcedimientoPasoService.prototype, "retroceder").resolves({
             datos: { idConsultaProcedimientoPaso: "cp1-p1", estado: "EN_PROCESO" }
-        }));
-        stubs.push(sinon.stub(ConsultaProcedimientoPasoService.prototype, "findById").resolves({
-            datos: {
-                idConsultaProcedimientoPaso: "cp1-p1",
-                estado: "EN_PROCESO",
-                valor: "",
-                idProcedimientoPaso: { idProcedimientoPaso: "a" },
-                idConsultaProcedimiento: { idConsultaProcedimiento: "cp1" }
-            }
         }));
         let el = crear();
         await tick(100);
@@ -198,13 +192,11 @@ suite("boundary/pagina-atencion", function () {
         chai.expect(el.motivo.root.querySelector(".fondo").hidden).to.equal(false);
         await el.devolverPaso("Falta información");
         let actualizaciones = ConsultaProcedimientoPasoService.prototype.update.getCalls();
-        chai.expect(actualizaciones.length).to.equal(2);
+        chai.expect(actualizaciones.length).to.equal(1);
         chai.expect(actualizaciones[0].args[0]).to.equal("cp1-p2");
         chai.expect(actualizaciones[0].args[1].valor).to.include("Devolución desde Paso B: Falta información");
-        chai.expect(ConsultaProcedimientoPasoService.prototype.findById.calledOnceWith("cp1-p1")).to.equal(true);
-        chai.expect(actualizaciones[1].args[0]).to.equal("cp1-p1");
-        chai.expect(actualizaciones[1].args[1].valor).to.include("Devolución desde Paso B: Falta información");
-        chai.expect(ConsultaProcedimientoPasoService.prototype.retroceder.calledOnceWith("cp1-p2")).to.equal(true);
+        chai.expect(ConsultaProcedimientoPasoService.prototype.retroceder.calledOnceWith(
+            "cp1-p2", "Devolución desde Paso B: Falta información")).to.equal(true);
         chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("devuelto");
     });
 
@@ -215,6 +207,7 @@ suite("boundary/pagina-atencion", function () {
         stubs.push(sinon.stub(ExamenResultadoService.prototype, "create").resolves({ datos: "ok" }));
         let el = crear();
         await tick(120);
+        el.q("#valor").value = "Atención con exámenes";
         let fila = el.panelExamenes.root.querySelector(".fila-examen");
         fila.querySelector("input[type=checkbox]").checked = true;
         fila.querySelector(".resultado").value = "Normal";
@@ -335,6 +328,60 @@ suite("boundary/pagina-atencion", function () {
         chai.expect(el.root.textContent).to.not.include("Paso C");
         chai.expect(el.root.textContent).to.not.include("Responsable");
         chai.expect(el.q("#atencion").classList.contains("oculto")).to.equal(true);
+    });
+
+    test("paso propio completado deberia mostrarse como lectura y no como boton", async function () {
+        let pasoACompletado = Object.assign({}, pasoA, { estado: "COMPLETADO" });
+        baseStubs({ pasos: [pasoACompletado, pasoB] });
+        let el = crear();
+        await tick(120);
+        chai.expect(el.root.querySelectorAll("#pasos button").length).to.equal(1);
+        chai.expect(el.root.querySelectorAll("#pasos .solo-lectura").length).to.equal(1);
+        chai.expect(el.root.textContent).to.include("Paso A");
+        chai.expect(el.root.textContent).to.include("Paso B");
+        chai.expect(el.q("#pasos .solo-lectura .estado").textContent).to.include("COMPLETADO");
+    });
+
+    test("procedimiento deberia quedar fijado durante la atencion", async function () {
+        baseStubs({
+            cps: [
+                { idConsultaProcedimiento: "cp1", idProcedimiento: "proc1" },
+                { idConsultaProcedimiento: "cp2", idProcedimiento: "proc2" }
+            ]
+        });
+        let el = crear();
+        await tick(120);
+        chai.expect(el.q("#procedimiento").disabled).to.equal(true);
+        chai.expect(el.q("#fijado").hidden).to.equal(false);
+        el.q("#procedimiento").value = "cp2";
+        el.q("#procedimiento").dispatchEvent(new Event("change"));
+        chai.expect(el.procedimientoActual.id).to.equal("cp1");
+    });
+
+    test("avanzar a otro rol deberia volver al dashboard", async function () {
+        baseStubs();
+        stubs.push(sinon.stub(ConsultaProcedimientoPasoService.prototype, "update").resolves({ datos: {} }));
+        stubs.push(sinon.stub(ConsultaProcedimientoPasoService.prototype, "avanzar").resolves({
+            datos: { salirAtencion: true, idRolSiguiente: "r2", nombreRolSiguiente: "Enfermera" }
+        }));
+        let el = crear();
+        await tick(80);
+        el.q("#valor").value = "Hecho";
+        el.q("#estado").value = "COMPLETADO";
+        await el.guardar(true);
+        chai.expect(location.hash).to.equal("#/dashboard");
+        chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("otro rol");
+    });
+
+    test("sin conexion deberia bloquear la atencion y no llamar al backend", async function () {
+        stubs.push(sinon.spy(ConsultaProcedimientoPasoService.prototype, "update"));
+        conectividad.marcar(false);
+        let el = crear();
+        await tick(20);
+        chai.expect(el.contenido.hidden).to.equal(true);
+        chai.expect(el.mensaje.root.querySelector(".texto").textContent).to.include("Sin conexión");
+        await el.guardar(false);
+        chai.expect(ConsultaProcedimientoPasoService.prototype.update.called).to.equal(false);
     });
 });
 

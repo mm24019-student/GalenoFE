@@ -55,6 +55,10 @@ export class Sesion extends EventTarget {
         return this.datos ? this.datos.rol : null;
     }
 
+    get idPersonaRol() {
+        return this.datos ? this.datos.idPersonaRol : null;
+    }
+
     get bloqueado() {
         return Boolean(this.datos && this.datos.bloqueado);
     }
@@ -64,11 +68,11 @@ export class Sesion extends EventTarget {
      * @param asignaciones lista de { clinica, rol } donde esta registrado como empleado
      */
     iniciar(usuario, asignaciones) {
-        this.datos = { usuario: usuario, asignaciones: asignaciones || [], clinica: null, rol: null };
+        this.datos = { usuario: usuario, asignaciones: asignaciones || [], clinica: null, rol: null, idPersonaRol: null };
         this.guardar();
     }
 
-    elegirContexto(clinica, rol) {
+    elegirContexto(clinica, rol, idPersonaRol = null) {
         if (!this.activa) {
             throw new Error("No hay una sesion iniciada");
         }
@@ -77,10 +81,11 @@ export class Sesion extends EventTarget {
         }
         this.datos.clinica = clinica;
         this.datos.rol = rol;
+        this.datos.idPersonaRol = idPersonaRol;
         this.guardar();
     }
 
-    confirmarContexto(clinica, rol) {
+    confirmarContexto(clinica, rol, idPersonaRol = null) {
         if (!this.activa) {
             throw new Error("No hay una sesion iniciada");
         }
@@ -89,6 +94,7 @@ export class Sesion extends EventTarget {
         }
         this.datos.clinica = clinica;
         this.datos.rol = rol;
+        this.datos.idPersonaRol = idPersonaRol;
         this.datos.bloqueado = true;
         this.guardar();
     }

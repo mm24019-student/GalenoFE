@@ -80,6 +80,29 @@ h2 { margin: 0 0 var(--espacio-3); font-size: var(--texto-lg); color: var(--colo
     box-shadow: none;
 }
 .pasos button:hover { background: var(--color-superficie-suave); border-color: var(--color-principal); }
+.pasos .solo-lectura {
+    display: grid;
+    grid-template-columns: 2rem 1fr auto;
+    align-items: center;
+    gap: var(--espacio-3);
+    width: 100%;
+    padding: var(--espacio-2) var(--espacio-3);
+    border: 1px solid var(--color-borde);
+    background: var(--color-superficie-suave);
+    color: var(--color-texto-suave);
+}
+.pasos .solo-lectura > span:first-child {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #e9ecef;
+    font-weight: 700;
+    font-size: var(--texto-sm);
+}
+.fijado { display: block; margin-top: var(--espacio-1); color: var(--color-texto-suave); font-size: var(--texto-sm); }
+.fijado[hidden] { display: none; }
 .pasos button > span:first-child {
     display: grid;
     place-items: center;
@@ -163,6 +186,6 @@ h2 { margin: 0 0 var(--espacio-3); font-size: var(--texto-lg); color: var(--colo
     .panel, .resumen { padding: var(--espacio-3); }
     .acciones { flex-direction: column-reverse; }
     .acciones button { width: 100%; }
-    .pasos button { grid-template-columns: 2rem 1fr; }
-    .pasos button .estado { grid-column: 2; justify-self: start; }
+    .pasos button, .pasos .solo-lectura { grid-template-columns: 2rem 1fr; }
+    .pasos button .estado, .pasos .solo-lectura .estado { grid-column: 2; justify-self: start; }
 }

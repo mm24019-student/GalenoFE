@@ -1,6 +1,8 @@
 import DefaultError from '../entity/default_error.js';
 import DefaultResponse from '../entity/default_response.js';
 import { URL_API } from '../model/config.js';
+import { sesion } from './sesion.js';
+import { conectividad } from './conectividad.js';
 
 const CONSULTAR = "No se pudieron consultar los datos";
 const CREAR = "No se pudo crear el registro";
@@ -106,9 +108,23 @@ class DefaultService {
          });
     }
 
+    cabeceras(extra = {}) {
+        let salida = Object.assign({}, extra || {});
+        if (sesion.idPersonaRol) {
+            salida["X-Id-Persona-Rol"] = String(sesion.idPersonaRol);
+        }
+        return salida;
+    }
+
+    peticion(url, opciones = {}) {
+        let peticion = Object.assign({}, opciones);
+        peticion.headers = this.cabeceras(opciones.headers);
+        return conectividad.peticion(url, peticion);
+    }
+
     findRange(first, max) {
         let salida = new Promise((resolve, reject) => {
-            fetch(`${this.URL}?first=${first}&max=${max}`, { method: "GET" }).then(r => {
+            this.peticion(`${this.URL}?first=${first}&max=${max}`, { method: "GET" }).then(r => {
                 if (r.status === 200) {
                     r.json().then(j => {
                         let response = new DefaultResponse();
@@ -138,7 +154,7 @@ class DefaultService {
       */
     findById(id) {
          let salida = new Promise((resolve, reject) => {
-             fetch(`${this.URL}/${id}`, { method: "GET" }).then(r => {
+             this.peticion(`${this.URL}/${id}`, { method: "GET" }).then(r => {
                  if (r.status === 200) {
                      r.json().then(j => {
                          let response = new DefaultResponse();
@@ -164,7 +180,7 @@ class DefaultService {
      */
     findBy(url) {
         let salida = new Promise((resolve, reject) => {
-            fetch(url, { method: "GET" }).then(r => {
+            this.peticion(url, { method: "GET" }).then(r => {
                 if (r.status === 200) {
                     r.json().then(j => {
                         let response = new DefaultResponse();
@@ -190,7 +206,7 @@ class DefaultService {
       */
     create(registro) {
          let salida = new Promise((resolve, reject) => {
-             fetch(this.URL, {
+             this.peticion(this.URL, {
                  method: "POST",
                  headers: { "Content-Type": "application/json" },
                  body: JSON.stringify(registro)
@@ -215,7 +231,7 @@ class DefaultService {
       */
     update(id, registro) {
          let salida = new Promise((resolve, reject) => {
-             fetch(`${this.URL}/${id}`, {
+             this.peticion(`${this.URL}/${id}`, {
                  method: "PUT",
                  headers: { "Content-Type": "application/json" },
                  body: JSON.stringify(registro)
@@ -245,7 +261,7 @@ class DefaultService {
       */
     delete(id) {
          let salida = new Promise((resolve, reject) => {
-             fetch(`${this.URL}/${id}`, { method: "DELETE" }).then(r => {
+             this.peticion(`${this.URL}/${id}`, { method: "DELETE" }).then(r => {
                  if (r.status === 200) {
                      let response = new DefaultResponse();
                      response.totalDatos = 0;

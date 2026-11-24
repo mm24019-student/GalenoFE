@@ -3,6 +3,8 @@
  * estilos comunes de una pantalla. Las subclases implementan contenido() y,
  * si necesitan escuchar eventos, conectado().
  */
+import { conectividad } from "../control/conectividad.js";
+
 export default class PaginaBase extends HTMLElement {
 
     constructor() {
@@ -10,6 +12,7 @@ export default class PaginaBase extends HTMLElement {
         this.root = this.attachShadow({ mode: "open" });
         this._parametros = new URLSearchParams();
         this.renderizada = false;
+        this.alCambiarConectividad = evento => this.aplicarConectividad(evento.detail.conectado);
     }
 
     get titulo() {
@@ -38,6 +41,13 @@ export default class PaginaBase extends HTMLElement {
         // Las subclases que necesiten listeners lo sobrescriben.
     }
 
+    aplicarConectividad(conectado) {
+    }
+
+    get conectadoABackend() {
+        return conectividad.conectado;
+    }
+
     q(selector) {
         return this.root.querySelector(selector);
     }
@@ -63,5 +73,11 @@ export default class PaginaBase extends HTMLElement {
         }
         this.root.replaceChildren(estilo, cabecera, this.contenido());
         this.conectado();
+        conectividad.addEventListener("cambio", this.alCambiarConectividad);
+        this.aplicarConectividad(conectividad.conectado);
+    }
+
+    disconnectedCallback() {
+        conectividad.removeEventListener("cambio", this.alCambiarConectividad);
     }
 }

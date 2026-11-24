@@ -45,6 +45,16 @@ class PaginaLogin extends PaginaBase {
         this.selector.addEventListener("error", evento => this.error(evento.detail));
     }
 
+    aplicarConectividad(conectado) {
+        if (!this.mensaje || !this.selector) {
+            return;
+        }
+        this.selector.bloqueado = !conectado;
+        if (!conectado) {
+            this.mensaje.mostrar("error", "Sin conexión con el backend. No puede iniciar sesión.");
+        }
+    }
+
     error(mensaje) {
         this.mensaje.mostrar("error", mensaje instanceof Error ? mensaje.message : String(mensaje));
         this.selector.bloqueado = false;
@@ -52,6 +62,10 @@ class PaginaLogin extends PaginaBase {
     }
 
     identificar(datos) {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         this.mensaje.mostrar("cargando", "Validando identidad…");
         buscarIdentidad(datos.tipo, datos.valor).then(identidad => {
             this.identidad = identidad;
@@ -108,6 +122,10 @@ class PaginaLogin extends PaginaBase {
     }
 
     entrar() {
+        if (!this.conectadoABackend) {
+            this.aplicarConectividad(false);
+            return;
+        }
         sesion.iniciar(this.identidad.persona, this.asignaciones);
         location.hash = "#/dashboard";
     }
